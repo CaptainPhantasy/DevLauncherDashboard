@@ -1,0 +1,25 @@
+{
+  "name": "dev-launcher-backend",
+  "version": "2.0.0",
+  "description": "Web-based application launcher for development projects",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "setup": "node ../scripts/setup.js",
+    "validate": "node -e \"import('./config-utils.js').then(m => m.loadAppConfigurations().then(apps => console.log('✅ Configuration is valid with', apps.length, 'apps')).catch(console.error))\"
+  },
+  "keywords": [
+    "development",
+    "launcher",
+    "dev-tools",
+    "nodejs",
+    "frontend",
+    "backend"
+  ],
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

@@ -1,0 +1,49 @@
+/**
+ * Example Personal App Configurations
+ * 
+ * Copy this file to apps.local.js and customize with your own projects.
+ * This file is gitignored and contains your personal app configurations.
+ */
+
+export const USER_APPS = [
+  // Example Next.js Application
+  {
+    id: 'my-nextjs-app',
+    name: 'My Next.js Project',
+    description: 'Full-stack application with TypeScript',
+    path: '~/projects/my-nextjs-app',
+    command: 'npm',
+    args: ['run', 'dev'],
+    preferredPort: 3000,
+    maxPort: 3010,
+    autoOpenBrowser: true,
+    type: 'nextjs'
+  },
+
+  // Example Vite Application
+  {
+    id: 'my-vite-app',
+    name: 'My Vite Project',
+    description: 'Modern frontend application',
+    path: '~/projects/my-vite-app',
+    command: 'npm',
+    args: ['run', 'dev'],
+    preferredPort: 5173,
+    maxPort: 5180,
+    autoOpenBrowser: true,
+    type: 'vite'
+  },
+
+  // Example Python CLI Tool
+  {
+    id: 'my-python-script',
+    name: 'My Python Script',
+    description: 'Command-line tool',
+    path: '~/projects/my-python-script',
+    command: 'python',
+    args: ['script.py'],
+    preferredPort: null,
+    autoOpenBrowser: false,
+    type: 'python-cli'
+  }
+];
