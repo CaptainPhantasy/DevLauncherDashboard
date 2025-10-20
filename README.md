@@ -2,6 +2,10 @@
 
 A flexible, reusable web-based application launcher for your development projects. Configure all your apps once and launch them with a single click.
 
+## 📸 Dashboard Preview
+
+![Dev Launcher Dashboard](Dev-Launcher-Dash.png)
+
 ## ✨ Features
 
 - **One-click app launching** - Start/stop your development apps instantly
