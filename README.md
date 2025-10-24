@@ -52,13 +52,21 @@ export const USER_APPS = [
 # Simple startup (recommended)
 ./start.sh
 
+# Or use the desktop app (if created)
+# Double-click Dev-Launcher.app on your Desktop
+
 # Manual startup
 cd backend && npm start
 cd frontend && npm run dev # in another terminal
 ```
 
 ### 4. Use Your Launcher
-Open http://localhost:4501 to see and launch all your apps!
+The launcher will automatically:
+- Clean up all running development ports
+- Start backend (http://localhost:4500) and frontend (http://localhost:4501)
+- **Auto-open your browser** to http://localhost:4501 after 5 seconds
+
+View and launch all your apps from the dashboard!
 
 ## 📁 Project Structure
 

@@ -4,6 +4,21 @@
 echo "🚀 Starting Dev Launcher..."
 echo ""
 
+# Kill all common development ports to avoid conflicts
+echo "🧹 Cleaning up running development servers..."
+PORTS_TO_KILL=($(seq 3000 3020) $(seq 4500 4510) $(seq 5173 5180) $(seq 8000 8010))
+
+for port in "${PORTS_TO_KILL[@]}"; do
+  pid=$(lsof -ti:$port 2>/dev/null)
+  if [ ! -z "$pid" ]; then
+    echo "  ✓ Killing process on port $port (PID: $pid)"
+    kill -9 $pid 2>/dev/null
+  fi
+done
+
+echo "✓ Port cleanup complete"
+echo ""
+
 # Check if backend dependencies are installed
 if [ ! -d "backend/node_modules" ]; then
   echo "📦 Installing backend dependencies..."
@@ -30,6 +45,17 @@ echo ""
 trap 'kill 0' SIGINT
 
 cd backend && node server.js &
+BACKEND_PID=$!
+
 cd frontend && npm run dev &
+FRONTEND_PID=$!
+
+# Wait for servers to start, then open browser
+(
+  sleep 5
+  echo ""
+  echo "🌐 Opening Dev Launcher in browser..."
+  open http://localhost:4501
+) &
 
 wait

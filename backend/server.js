@@ -44,6 +44,33 @@ async function findAvailablePort(preferredPort, maxPort) {
   throw new Error(`No available ports in range ${rangeStart}-${rangeEnd}`);
 }
 
+// Utility: Kill process on port
+function killPortProcess(port) {
+  return new Promise((resolve) => {
+    exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null`, (error) => {
+      if (error) {
+        // No process found on port or already killed
+        resolve(false);
+      } else {
+        console.log(`  ✓ Killed process on port ${port}`);
+        resolve(true);
+      }
+    });
+  });
+}
+
+// Utility: Kill processes in port range
+async function killPortRange(startPort, endPort) {
+  const killed = [];
+  for (let port = startPort; port <= endPort; port++) {
+    const wasKilled = await killPortProcess(port);
+    if (wasKilled) {
+      killed.push(port);
+    }
+  }
+  return killed;
+}
+
 // Utility: Open browser
 function openBrowser(url) {
   const browserApp = getEnv('BROWSER_APP', 'Google Chrome');
@@ -166,6 +193,12 @@ app.post('/api/apps/:id/start', async (req, res) => {
   }
 
   try {
+    // Kill any process on the preferred port to avoid conflicts
+    if (appConfig.preferredPort) {
+      console.log(`Checking port ${appConfig.preferredPort}...`);
+      await killPortProcess(appConfig.preferredPort);
+    }
+
     // Find available port
     let port = null;
     if (appConfig.preferredPort && appConfig.maxPort) {
@@ -347,6 +380,38 @@ app.post('/api/refresh', (req, res) => {
   res.json({ apps });
 });
 
+// API: Kill all development ports
+app.post('/api/cleanup-ports', async (req, res) => {
+  try {
+    console.log('🧹 Cleaning up all development ports...');
+
+    const portRanges = [
+      { start: 3000, end: 3020 },
+      { start: 4500, end: 4510 },
+      { start: 5173, end: 5180 },
+      { start: 8000, end: 8010 }
+    ];
+
+    const allKilled = [];
+    for (const range of portRanges) {
+      const killed = await killPortRange(range.start, range.end);
+      allKilled.push(...killed);
+    }
+
+    console.log(`✓ Cleaned up ${allKilled.length} ports`);
+
+    res.json({
+      success: true,
+      message: 'Port cleanup complete',
+      portsKilled: allKilled,
+      count: allKilled.length
+    });
+  } catch (error) {
+    console.error('Failed to cleanup ports:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
@@ -371,6 +436,7 @@ app.listen(PORT, () => {
   console.log(`  POST /api/apps/:id/stop     - Stop an app`);
   console.log(`  POST /api/apps/:id/open-terminal - Open Terminal`);
   console.log(`  POST /api/refresh          - Force refresh status`);
+  console.log(`  POST /api/cleanup-ports    - Kill all dev ports`);
   console.log(`  GET  /health               - Health check`);
 });
 

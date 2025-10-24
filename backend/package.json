@@ -8,7 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "setup": "node ../scripts/setup.js",
-    "validate": "node -e \"import('./config-utils.js').then(m => m.loadAppConfigurations().then(apps => console.log('✅ Configuration is valid with', apps.length, 'apps')).catch(console.error))\"
+    "validate": "node -e \"import('./config-utils.js').then(m => m.loadAppConfigurations().then(apps => console.log('Configuration is valid with', apps.length, 'apps')).catch(console.error))\""
   },
   "keywords": [
     "development",
