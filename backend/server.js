@@ -6,7 +6,7 @@ import { spawn, exec } from 'child_process';
 import { createServer } from 'net';
 import { fileURLToPath } from 'url';
 import { APPS, refreshApps, addApp } from './apps.js';
-import { getEnv, resolvePath, validateApp } from './config-utils.js';
+import { getEnv, validateApp } from './config-utils.js';
 import { listDirectory, discoverProject, allocatePortBlock } from './discovery.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +71,10 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function escapeAppleScript(str) {
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 // ── App Status ──────────────────────────────────────────────
 
 function getAppStatus(appId) {
@@ -102,7 +106,7 @@ function getAppStatus(appId) {
     port: running?.primaryPort || null,
     startTime: running?.startTime || null,
     preferredPort: appConfig.preferredPort || appConfig.portBlock?.start || null,
-    type: appConfig.type || appConfig.framework || 'custom',
+    type: appConfig.type || 'custom',
     description: appConfig.description || '',
     icon: appConfig.icon || null,
     services: serviceStatuses.length > 0 ? serviceStatuses : undefined,
@@ -179,7 +183,7 @@ app.post('/api/apps/:id/start', async (req, res) => {
       // CLI-only apps → open in Terminal
       if (appConfig.autoOpenBrowser === false && services.length === 1) {
         const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
-        const script = `tell application "${terminalApp}"\n  do script "cd '${svcDir}' && ${command} ${args.join(' ')}"\n  activate\nend tell`;
+        const script = `tell application "${terminalApp}"\n  do script "cd '${escapeAppleScript(svcDir)}' && ${escapeAppleScript(command)} ${args.map(escapeAppleScript).join(' ')}"\n  activate\nend tell`;
         spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' });
         runningEntry.services.set(svc.role, { process: null, port: null });
         break;
@@ -267,7 +271,7 @@ app.post('/api/apps/:id/open-terminal', (req, res) => {
   if (!appConfig) return res.status(404).json({ error: 'App not found' });
 
   const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
-  const script = `tell application "${terminalApp}"\n  do script "cd '${appConfig.path}'"\n  activate\nend tell`;
+  const script = `tell application "${terminalApp}"\n  do script "cd '${escapeAppleScript(appConfig.path)}'"\n  activate\nend tell`;
   spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' });
 
   res.json({ success: true, appId: req.params.id, path: appConfig.path });
@@ -321,13 +325,13 @@ app.post('/api/import', async (req, res) => {
     return res.status(409).json({ error: 'Project already imported' });
   }
 
+  const svcList = services || [];
   const newApp = {
     id,
     name,
     description: description || '',
     path: projectPath,
-    services: services || [],
-    framework: framework || 'custom',
+    services: svcList,
     type: framework || 'custom',
     icon: icon || null,
     portBlock: portBlock || allocatePortBlock(APPS),
@@ -335,9 +339,8 @@ app.post('/api/import', async (req, res) => {
     maxPort: portBlock?.end || null,
     startupDelay: startupDelay || 2000,
     autoOpenBrowser: true,
-    // Legacy compat: first service command
-    command: services?.[0]?.command || 'npm',
-    args: services?.[0]?.args || ['run', 'dev'],
+    command: svcList[0]?.command || 'npm',
+    args: svcList[0]?.args || ['run', 'dev'],
   };
 
   try {
@@ -409,8 +412,7 @@ function formatAppEntry(app) {
 
   lines.push(`    command: '${app.command || 'npm'}',`);
   lines.push(`    args: ${JSON.stringify(app.args || ['run', 'dev'])},`);
-  lines.push(`    framework: '${app.framework || 'custom'}',`);
-  lines.push(`    type: '${app.type || app.framework || 'custom'}',`);
+  lines.push(`    type: '${app.type || 'custom'}',`);
 
   if (app.icon) lines.push(`    icon: '${app.icon}',`);
   if (app.portBlock) lines.push(`    portBlock: { start: ${app.portBlock.start}, end: ${app.portBlock.end} },`);

@@ -10,13 +10,7 @@ import { FolderBrowser } from './components/FolderBrowser';
 import { DiscoveryPreview } from './components/DiscoveryPreview';
 import { getApps, startApp, stopApp, cleanupPorts, discoverProject } from './api';
 import { cn } from './lib/utils';
-
-const TYPE_ORDER = ['nextjs', 'vite', 'cra', 'remix', 'nuxt', 'angular', 'express', 'fastify', 'django', 'flask', 'python', 'python-cli', 'docker', 'static', 'cli', 'custom'];
-const TYPE_LABELS = {
-  nextjs: 'Next.js', vite: 'Vite', cra: 'CRA', remix: 'Remix', nuxt: 'Nuxt', angular: 'Angular',
-  express: 'Express', fastify: 'Fastify', django: 'Django', flask: 'Flask',
-  python: 'Python', 'python-cli': 'CLI', docker: 'Docker', static: 'Static', cli: 'CLI', custom: 'Custom',
-};
+import { TYPE_ORDER, TYPE_LABELS } from './lib/constants';
 
 function App() {
   const [apps, setApps] = useState([]);

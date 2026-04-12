@@ -31,12 +31,14 @@ export function loadEnv() {
   return env;
 }
 
+// Parse .env once at module load
+const _envCache = loadEnv();
+
 /**
  * Get environment variable with fallback
  */
 export function getEnv(key, defaultValue = null) {
-  const env = loadEnv();
-  return env[key] || process.env[key] || defaultValue;
+  return _envCache[key] || process.env[key] || defaultValue;
 }
 
 /**
@@ -45,15 +47,14 @@ export function getEnv(key, defaultValue = null) {
 export function resolvePath(inputPath) {
   if (!inputPath) return inputPath;
   
-  const env = loadEnv();
   let resolved = inputPath;
   
   // Replace environment variables
-  Object.keys(env).forEach(key => {
+  Object.keys(_envCache).forEach(key => {
     const pattern = new RegExp(`\\$\\{${key}\\}`, 'g');
-    resolved = resolved.replace(pattern, env[key]);
+    resolved = resolved.replace(pattern, _envCache[key]);
     const pattern2 = new RegExp(`\\$${key}`, 'g');
-    resolved = resolved.replace(pattern2, env[key]);
+    resolved = resolved.replace(pattern2, _envCache[key]);
   });
   
   // Handle ~ for home directory
@@ -152,7 +153,9 @@ export async function loadAppConfigurations() {
  * Validate app configuration
  */
 export function validateApp(app) {
-  const requiredFields = ['id', 'name', 'path', 'command', 'args'];
+  // Apps with services[] don't need root command/args
+  const hasServices = app.services && app.services.length > 0;
+  const requiredFields = hasServices ? ['id', 'name', 'path'] : ['id', 'name', 'path', 'command', 'args'];
   const missing = requiredFields.filter(field => !app[field]);
   
   if (missing.length > 0) {

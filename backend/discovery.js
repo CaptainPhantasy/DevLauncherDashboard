@@ -120,7 +120,6 @@ export function discoverProject(dirPath) {
 
   if (serviceRoles.length > 0) {
     // Multi-service project
-    let order = 0;
     for (const svc of serviceRoles) {
       const svcPath = path.join(resolved, svc.dir);
       const svcPkg = readPackageJson(svcPath);
@@ -134,7 +133,6 @@ export function discoverProject(dirPath) {
         framework: detected.framework,
         order: svc.role === 'database' ? 0 : svc.role === 'backend' ? 1 : svc.role === 'middleware' ? 2 : 3,
       });
-      order++;
     }
 
     // Sort by startup order
@@ -475,10 +473,7 @@ function detectJustfileProject(rootDir) {
       const hasPackageSwift = fs.existsSync(path.join(subPath, 'Package.swift'));
 
       if (hasPyproject && hasMainPy) {
-        // Check if justfile has a target for this sub-app
         const lower = sub.toLowerCase();
-        const hasJustTarget = justfileContent.toLowerCase().includes(`cd ${appDir}/${sub}`) ||
-                              justfileContent.toLowerCase().includes(`cd apps/${sub}`);
 
         // Determine role from directory name
         let role = 'fullstack';

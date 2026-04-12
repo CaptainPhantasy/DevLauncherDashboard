@@ -1,26 +1,10 @@
 import { useState } from 'react';
 import {
-  X, Check, Loader2, Package, Server, Monitor,
-  Database, Layers, Image, Network, Clock
+  X, Check, Loader2, Package, Image, Network, Clock
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { importProject } from '../api';
-
-const ROLE_ICONS = {
-  frontend:  Monitor,
-  backend:   Server,
-  middleware: Layers,
-  database:  Database,
-  fullstack: Package,
-};
-
-const ROLE_COLORS = {
-  frontend:  'text-blue-400 bg-blue-400/10',
-  backend:   'text-green-400 bg-green-400/10',
-  middleware: 'text-yellow-400 bg-yellow-400/10',
-  database:  'text-purple-400 bg-purple-400/10',
-  fullstack: 'text-cyan-400 bg-cyan-400/10',
-};
+import { ROLE_ICONS, ROLE_COLORS } from '../lib/constants';
 
 export function DiscoveryPreview({ discovery, onImported, onClose }) {
   const [importing, setImporting] = useState(false);

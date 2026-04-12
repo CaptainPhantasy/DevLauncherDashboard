@@ -1,39 +1,10 @@
 import {
   Play, Square, Loader2, ExternalLink, Clock, Network,
-  Globe, Zap, Terminal, Box, TerminalSquare,
-  Server, Monitor, Layers, Database, Package
+  Box, TerminalSquare, Package
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { openTerminal, getIconUrl } from '../api';
-
-const TYPE_ICONS = {
-  nextjs: Globe, vite: Zap, cra: Globe, remix: Globe, nuxt: Globe, angular: Globe,
-  python: Terminal, 'python-cli': Terminal, fastapi: Terminal,
-  django: Terminal, flask: Terminal,
-  docker: Box, static: Globe, cli: Terminal, custom: Box,
-  express: Server, fastify: Server,
-};
-
-const TYPE_LABELS = {
-  nextjs: 'Next.js', vite: 'Vite', cra: 'CRA', remix: 'Remix', nuxt: 'Nuxt', angular: 'Angular',
-  python: 'Python', 'python-cli': 'CLI', fastapi: 'FastAPI',
-  django: 'Django', flask: 'Flask',
-  docker: 'Docker', static: 'Static', cli: 'CLI', custom: 'Custom',
-  express: 'Express', fastify: 'Fastify',
-};
-
-const TYPE_COLORS = {
-  nextjs: 'bg-slate-600/30 text-slate-300',
-  vite: 'bg-violet-600/20 text-violet-300',
-  cra: 'bg-cyan-600/20 text-cyan-300',
-  python: 'bg-yellow-600/20 text-yellow-300',
-  django: 'bg-emerald-600/20 text-emerald-300',
-  docker: 'bg-blue-600/20 text-blue-300',
-  express: 'bg-green-600/20 text-green-300',
-  fastify: 'bg-green-600/20 text-green-300',
-};
-
-const ROLE_ICONS = { frontend: Monitor, backend: Server, middleware: Layers, database: Database, fullstack: Package };
+import { TYPE_ICONS, TYPE_LABELS, TYPE_COLORS, ROLE_ICONS } from '../lib/constants';
 
 function formatUptime(startTime) {
   if (!startTime) return null;
