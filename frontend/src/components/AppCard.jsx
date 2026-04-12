@@ -1,74 +1,162 @@
-import { Play, Square, Circle, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
+import {
+  Play, Square, Loader2, ExternalLink, Clock, Network,
+  Globe, Zap, Terminal, Box, TerminalSquare,
+  Server, Monitor, Layers, Database, Package
+} from 'lucide-react';
 import { cn } from '../lib/utils';
-import { openTerminal } from '../api';
+import { openTerminal, getIconUrl } from '../api';
+
+const TYPE_ICONS = {
+  nextjs: Globe, vite: Zap, cra: Globe, remix: Globe, nuxt: Globe, angular: Globe,
+  python: Terminal, 'python-cli': Terminal, fastapi: Terminal,
+  django: Terminal, flask: Terminal,
+  docker: Box, static: Globe, cli: Terminal, custom: Box,
+  express: Server, fastify: Server,
+};
+
+const TYPE_LABELS = {
+  nextjs: 'Next.js', vite: 'Vite', cra: 'CRA', remix: 'Remix', nuxt: 'Nuxt', angular: 'Angular',
+  python: 'Python', 'python-cli': 'CLI', fastapi: 'FastAPI',
+  django: 'Django', flask: 'Flask',
+  docker: 'Docker', static: 'Static', cli: 'CLI', custom: 'Custom',
+  express: 'Express', fastify: 'Fastify',
+};
+
+const TYPE_COLORS = {
+  nextjs: 'bg-slate-600/30 text-slate-300',
+  vite: 'bg-violet-600/20 text-violet-300',
+  cra: 'bg-cyan-600/20 text-cyan-300',
+  python: 'bg-yellow-600/20 text-yellow-300',
+  django: 'bg-emerald-600/20 text-emerald-300',
+  docker: 'bg-blue-600/20 text-blue-300',
+  express: 'bg-green-600/20 text-green-300',
+  fastify: 'bg-green-600/20 text-green-300',
+};
+
+const ROLE_ICONS = { frontend: Monitor, backend: Server, middleware: Layers, database: Database, fullstack: Package };
+
+function formatUptime(startTime) {
+  if (!startTime) return null;
+  const diff = Date.now() - new Date(startTime).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return 'Just now';
+}
+
+function truncatePath(fullPath) {
+  const parts = fullPath.split('/').filter(Boolean);
+  if (parts.length <= 2) return fullPath;
+  return '.../' + parts.slice(-2).join('/');
+}
 
 export function AppCard({ app, onStart, onStop, isLoading }) {
   const isRunning = app.isRunning;
+  const TypeIcon = TYPE_ICONS[app.type] || Box;
+  const typeLabel = TYPE_LABELS[app.type] || app.type || 'Custom';
+  const typeColor = TYPE_COLORS[app.type] || 'bg-slate-600/20 text-slate-400';
+  const uptime = formatUptime(app.startTime);
 
   const handleOpenTerminal = async () => {
-    try {
-      await openTerminal(app.id);
-    } catch (error) {
-      console.error('Failed to open Terminal:', error.message);
-    }
+    try { await openTerminal(app.id); } catch { /* ignore */ }
   };
 
   return (
     <div className={cn(
-      "relative rounded-lg border bg-white shadow-sm transition-all hover:shadow-md",
-      isRunning ? "border-green-200 bg-green-50/30" : "border-slate-200"
+      "relative rounded-xl border bg-slate-800/40 transition-all duration-200 hover:bg-slate-800/70",
+      isRunning
+        ? "border-l-4 border-l-green-500 border-t-slate-700/50 border-r-slate-700/50 border-b-slate-700/50"
+        : "border-slate-700/50 hover:border-slate-600/50"
     )}>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-900 mb-1">
-              {app.name}
-            </h3>
-            <button
-              onClick={handleOpenTerminal}
-              className="group text-sm text-slate-500 font-mono break-all hover:text-blue-600 hover:underline flex items-center gap-1 transition-colors"
-              title={`Open Terminal at ${app.path}`}
-            >
-              <span>{app.path}</span>
-              <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-            </button>
-          </div>
-          <div className="ml-4">
-            {isRunning ? (
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+      <div className="p-4">
+        {/* Top row: icon/badge + status dot */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {/* App icon or type icon */}
+            {app.icon ? (
+              <img
+                src={getIconUrl(app.id)}
+                alt=""
+                className="h-8 w-8 rounded-lg object-cover bg-slate-700"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
             ) : (
-              <Circle className="h-6 w-6 text-slate-300" />
+              <div className="h-8 w-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
+                <TypeIcon className="h-4 w-4 text-slate-400" />
+              </div>
             )}
-          </div>
-        </div>
-
-        {/* Status Info */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Status:</span>
-            <span className={cn(
-              "font-medium",
-              isRunning ? "text-green-600" : "text-slate-400"
-            )}>
-              {isRunning ? 'Running' : 'Stopped'}
+            <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full", typeColor)}>
+              {typeLabel}
             </span>
           </div>
-          {isRunning && app.port && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Port:</span>
-              <span className="font-mono font-medium text-slate-900">
-                {app.port}
-              </span>
-            </div>
+          <div className={cn(
+            "h-2.5 w-2.5 rounded-full flex-shrink-0",
+            isRunning ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]" : "bg-slate-600"
+          )} />
+        </div>
+
+        {/* Name */}
+        <h3 className="text-base font-semibold text-slate-100 mb-0.5 truncate">{app.name}</h3>
+
+        {/* Description */}
+        <p className="text-xs text-slate-500 mb-2 line-clamp-1">
+          {app.description || typeLabel + ' application'}
+        </p>
+
+        {/* Path */}
+        <button
+          onClick={handleOpenTerminal}
+          className="group text-[11px] text-slate-500 font-mono hover:text-blue-400 flex items-center gap-1 transition-colors mb-3 truncate max-w-full"
+          title={app.path}
+        >
+          <span className="truncate">{truncatePath(app.path)}</span>
+          <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        </button>
+
+        {/* Services (multi-service apps) */}
+        {app.services && app.services.length > 1 && (
+          <div className="mb-3 space-y-1">
+            {app.services.map((svc) => {
+              const RoleIcon = ROLE_ICONS[svc.role] || Package;
+              return (
+                <div key={svc.role} className="flex items-center gap-2 text-xs">
+                  <RoleIcon className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                  <span className="text-slate-400 capitalize">{svc.role}</span>
+                  {svc.isRunning && svc.port && (
+                    <span className="text-slate-500 font-mono">:{svc.port}</span>
+                  )}
+                  <div className={cn(
+                    "h-1.5 w-1.5 rounded-full ml-auto flex-shrink-0",
+                    svc.isRunning ? "bg-green-400" : "bg-slate-600"
+                  )} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Info row */}
+        <div className="flex items-center gap-3 mb-3 text-xs text-slate-500">
+          {(isRunning && app.port) && (
+            <span className="flex items-center gap-1">
+              <Network className="h-3 w-3" />
+              <span className="font-mono text-slate-300">{app.port}</span>
+            </span>
           )}
-          {!isRunning && app.preferredPort && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Preferred Port:</span>
-              <span className="font-mono text-slate-500">
-                {app.preferredPort}
-              </span>
-            </div>
+          {(!isRunning && app.preferredPort) && (
+            <span className="flex items-center gap-1">
+              <Network className="h-3 w-3" />
+              <span className="font-mono">{app.preferredPort}</span>
+            </span>
+          )}
+          {isRunning && uptime && (
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {uptime}
+            </span>
           )}
         </div>
 
@@ -79,50 +167,39 @@ export function AppCard({ app, onStart, onStop, isLoading }) {
               onClick={() => onStart(app.id)}
               disabled={isLoading}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors",
-                "bg-blue-600 text-white hover:bg-blue-700",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
+                "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "bg-blue-600/80 text-white hover:bg-blue-500",
+                "disabled:opacity-40 disabled:cursor-not-allowed"
               )}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Starting...
-                </>
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Starting...</>
               ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Start
-                </>
+                <><Play className="h-3.5 w-3.5" /> Launch</>
               )}
             </button>
           ) : (
             <>
               <button
-                onClick={() => window.open(`http://localhost:${app.port}`, '_blank')}
+                onClick={() => app.port && window.open(`http://localhost:${app.port}`, '_blank')}
                 disabled={!app.port}
-                className={cn(
-                  "flex-1 px-4 py-2.5 rounded-md font-medium transition-colors",
-                  "bg-green-600 text-white hover:bg-green-700",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-600/20 text-green-400 hover:bg-green-600/30 disabled:opacity-40 transition-colors"
               >
-                Open App
+                Open
+              </button>
+              <button
+                onClick={handleOpenTerminal}
+                className="flex items-center justify-center px-2.5 py-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-colors"
+                title="Open Terminal"
+              >
+                <TerminalSquare className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => onStop(app.id)}
                 disabled={isLoading}
-                className={cn(
-                  "flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors",
-                  "bg-red-600 text-white hover:bg-red-700",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
+                className="flex items-center justify-center px-2.5 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 disabled:opacity-40 transition-colors"
               >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
+                {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Square className="h-3.5 w-3.5" />}
               </button>
             </>
           )}

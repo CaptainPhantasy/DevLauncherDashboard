@@ -1,25 +1,14 @@
 import { loadAppConfigurations } from './config-utils.js';
 
-/**
- * Dynamic App Configurations
- * 
- * This loads app configurations from user settings or defaults.
- * Users can customize apps.local.js with their own projects.
- */
 export let APPS = [];
 
-// Load configurations asynchronously
 loadAppConfigurations().then(apps => {
   APPS = apps;
 }).catch(error => {
   console.error('Failed to load app configurations:', error);
-  // Fallback to empty array if loading fails
   APPS = [];
 });
 
-/**
- * Helper function to refresh app configurations
- */
 export async function refreshApps() {
   try {
     APPS = await loadAppConfigurations();
@@ -27,5 +16,18 @@ export async function refreshApps() {
   } catch (error) {
     console.error('Failed to refresh app configurations:', error);
     return APPS;
+  }
+}
+
+/**
+ * Add a new app to the runtime array (for import).
+ */
+export function addApp(appConfig) {
+  // Prevent duplicates
+  const existing = APPS.findIndex(a => a.id === appConfig.id);
+  if (existing !== -1) {
+    APPS[existing] = appConfig;
+  } else {
+    APPS.push(appConfig);
   }
 }

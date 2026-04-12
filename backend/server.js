@@ -1,451 +1,497 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 import { spawn, exec } from 'child_process';
 import { createServer } from 'net';
-import { APPS, refreshApps } from './apps.js';
-import { getEnv, resolvePath, validateApp, setupUserConfiguration } from './config-utils.js';
+import { fileURLToPath } from 'url';
+import { APPS, refreshApps, addApp } from './apps.js';
+import { getEnv, resolvePath, validateApp } from './config-utils.js';
+import { listDirectory, discoverProject, allocatePortBlock } from './discovery.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = getEnv('BACKEND_PORT', '4500');
 
-// Store running processes: { appId: { process, port, startTime } }
+// Store running processes: { appId: { services: Map<role, { process, port }>, startTime } }
 const runningApps = new Map();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Utility: Check if port is available
+// ── Utilities ──────────────────────────────────────────────
+
 function isPortAvailable(port) {
   return new Promise((resolve) => {
     const server = createServer();
     server.once('error', () => resolve(false));
-    server.once('listening', () => {
-      server.close();
-      resolve(true);
-    });
+    server.once('listening', () => { server.close(); resolve(true); });
     server.listen(port, getEnv('BACKEND_HOST', '127.0.0.1'));
   });
 }
 
-// Utility: Find available port in range
 async function findAvailablePort(preferredPort, maxPort) {
   if (!preferredPort || !maxPort) return null;
-
   const maxAttempts = parseInt(getEnv('MAX_PORT_ATTEMPTS', '10'));
-  const rangeStart = preferredPort;
   const rangeEnd = Math.min(maxPort, preferredPort + maxAttempts - 1);
-
-  for (let port = rangeStart; port <= rangeEnd; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
+  for (let port = preferredPort; port <= rangeEnd; port++) {
+    if (await isPortAvailable(port)) return port;
   }
-  throw new Error(`No available ports in range ${rangeStart}-${rangeEnd}`);
+  throw new Error(`No available ports in range ${preferredPort}-${rangeEnd}`);
 }
 
-// Utility: Kill process on port
 function killPortProcess(port) {
   return new Promise((resolve) => {
-    exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null`, (error) => {
-      if (error) {
-        // No process found on port or already killed
-        resolve(false);
-      } else {
-        console.log(`  ✓ Killed process on port ${port}`);
-        resolve(true);
-      }
-    });
+    exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null`, () => resolve());
   });
 }
 
-// Utility: Kill processes in port range
 async function killPortRange(startPort, endPort) {
   const killed = [];
   for (let port = startPort; port <= endPort; port++) {
-    const wasKilled = await killPortProcess(port);
-    if (wasKilled) {
+    const had = await new Promise(resolve => {
+      exec(`lsof -ti:${port}`, (err, stdout) => resolve(stdout?.trim() ? true : false));
+    });
+    if (had) {
+      await killPortProcess(port);
       killed.push(port);
     }
   }
   return killed;
 }
 
-// Utility: Open browser
 function openBrowser(url) {
   const browserApp = getEnv('BROWSER_APP', 'Google Chrome');
-  exec(`open -a "${browserApp}" "${url}"`, (error) => {
-    if (error) {
-      console.error(`Failed to open browser: ${error.message}`);
-    }
-  });
+  exec(`open -a "${browserApp}" "${url}"`, () => {});
 }
 
-// Utility: Get app status
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── App Status ──────────────────────────────────────────────
+
 function getAppStatus(appId) {
-  const app = APPS.find(a => a.id === appId);
-  if (!app) return null;
+  const appConfig = APPS.find(a => a.id === appId);
+  if (!appConfig) return null;
 
   const running = runningApps.get(appId);
+  const serviceStatuses = [];
+
+  if (appConfig.services && appConfig.services.length > 0) {
+    for (const svc of appConfig.services) {
+      const runningSvc = running?.services?.get(svc.role);
+      serviceStatuses.push({
+        role: svc.role,
+        dir: svc.dir,
+        framework: svc.framework,
+        isRunning: !!runningSvc,
+        port: runningSvc?.port || null,
+        pid: runningSvc?.process?.pid || null,
+      });
+    }
+  }
 
   return {
-    id: app.id,
-    name: app.name,
-    path: app.path,
+    id: appConfig.id,
+    name: appConfig.name,
+    path: appConfig.path,
     isRunning: !!running,
-    port: running?.port || null,
+    port: running?.primaryPort || null,
     startTime: running?.startTime || null,
-    preferredPort: app.preferredPort,
-    type: app.type || 'custom',
-    description: app.description || ''
+    preferredPort: appConfig.preferredPort || appConfig.portBlock?.start || null,
+    type: appConfig.type || appConfig.framework || 'custom',
+    description: appConfig.description || '',
+    icon: appConfig.icon || null,
+    services: serviceStatuses.length > 0 ? serviceStatuses : undefined,
+    portBlock: appConfig.portBlock || null,
   };
 }
 
-// API: Get all apps
+// ── API: Apps ──────────────────────────────────────────────
+
 app.get('/api/apps', (req, res) => {
-  const apps = APPS.map(app => getAppStatus(app.id));
-  res.json(apps);
+  res.json(APPS.map(a => getAppStatus(a.id)));
 });
 
-// API: Get system status
 app.get('/api/status', (req, res) => {
-  const runningCount = runningApps.size;
-  const apps = APPS.map(app => getAppStatus(app.id));
-
   res.json({
-    runningCount,
+    runningCount: runningApps.size,
     totalApps: APPS.length,
-    apps
+    apps: APPS.map(a => getAppStatus(a.id)),
   });
 });
 
-// API: Refresh configurations
-app.post('/api/config/refresh', async (req, res) => {
-  try {
-    await refreshApps();
-    const apps = APPS.map(app => getAppStatus(app.id));
-    res.json({ 
-      message: 'Configuration refreshed successfully', 
-      apps: apps,
-      total: APPS.length 
-    });
-  } catch (error) {
-    console.error('Failed to refresh configuration:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
+// ── API: Start (supports multi-service sequential startup) ──
 
-// API: Validate configuration
-app.get('/api/config/validate', (req, res) => {
-  const results = [];
-  
-  APPS.forEach(app => {
-    constvalidation = validateApp(app);
-    results.push({
-      id: app.id,
-      name: app.name,
-      ...validation
-    });
-  });
-  
-  res.json({
-    total: results.length,
-    valid: results.filter(r => r.valid).length,
-    results
-  });
-});
-
-// API: Setup wizard
-app.get('/api/setup', async (req, res) => {
-  try {
-    await setupUserConfiguration();
-    res.json({ message: 'Setup completed successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// API: Start an app
 app.post('/api/apps/:id/start', async (req, res) => {
   const { id } = req.params;
 
-  // Check if already running
   if (runningApps.has(id)) {
-    return res.status(400).json({
-      error: 'App already running',
-      port: runningApps.get(id).port
-    });
+    return res.status(400).json({ error: 'App already running', port: runningApps.get(id).primaryPort });
   }
 
-  // Find app configuration
   const appConfig = APPS.find(a => a.id === id);
-  if (!appConfig) {
-    return res.status(404).json({ error: 'App not found' });
-  }
+  if (!appConfig) return res.status(404).json({ error: 'App not found' });
 
-  // Validate configuration
   const validation = validateApp(appConfig);
   if (!validation.valid) {
-    return res.status(400).json({ 
-      error: 'Invalid app configuration', 
-      details: validation.errors 
-    });
+    return res.status(400).json({ error: 'Invalid app configuration', details: validation.errors });
   }
 
   try {
-    // Kill any process on the preferred port to avoid conflicts
-    if (appConfig.preferredPort) {
-      console.log(`Checking port ${appConfig.preferredPort}...`);
-      await killPortProcess(appConfig.preferredPort);
-    }
+    const services = appConfig.services && appConfig.services.length > 0
+      ? appConfig.services
+      : [{ role: 'fullstack', dir: '.', command: appConfig.command, args: appConfig.args, framework: appConfig.type, order: 0 }];
 
-    // Find available port
-    let port = null;
-    if (appConfig.preferredPort && appConfig.maxPort) {
-      port = await findAvailablePort(appConfig.preferredPort, appConfig.maxPort);
-    }
+    const startupDelay = appConfig.startupDelay || 2000;
+    const runningEntry = { services: new Map(), startTime: new Date().toISOString(), primaryPort: null };
+    runningApps.set(id, runningEntry);
 
-    // Prepare environment with PORT variable
-    const env = { ...process.env };
-    if (port) {
-      env.PORT = port.toString();
-    }
+    // Determine port base
+    let nextPort = appConfig.portBlock?.start || appConfig.preferredPort || null;
+    const maxPort = appConfig.portBlock?.end || appConfig.maxPort || (nextPort ? nextPort + 9 : null);
 
-    console.log(`Starting ${appConfig.name} on port ${port || 'N/A'}...`);
-    console.log(`Command: ${appConfig.command} ${appConfig.args.join(' ')}`);
-    console.log(`Working directory: ${appConfig.path}`);
+    console.log(`Starting ${appConfig.name} (${services.length} service${services.length > 1 ? 's' : ''})...`);
 
-    // For CLI apps, open in Terminal instead of spawning background process
-    if (!appConfig.autoOpenBrowser) {
-      if (getEnv('ENABLE_TERMINAL_OPEN', 'true') !== 'false') {
-        const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
-        const terminalScript = `
-tell application "${terminalApp}"
-  do script "cd '${appConfig.path}' && ${appConfig.command} ${appConfig.args.join(' ')}"
-  activate
-end tell
-        `.trim();
+    for (let i = 0; i < services.length; i++) {
+      const svc = services[i];
+      const svcDir = svc.dir === '.' ? appConfig.path : path.join(appConfig.path, svc.dir);
 
-        spawn('osascript', ['-e', terminalScript], {
-          detached: true,
-          stdio: 'ignore'
-        });
+      // Find port for this service
+      let port = null;
+      if (nextPort && maxPort) {
+        await killPortProcess(nextPort);
+        port = await findAvailablePort(nextPort, maxPort);
+        nextPort = port + 1; // Next service gets next port
       }
 
-      res.json({
-        success: true,
-        appId: id,
-        name: appConfig.name,
-        port: null,
-        message: 'Launched in Terminal'
+      const env = { ...process.env };
+      if (port) env.PORT = port.toString();
+
+      const command = svc.command || appConfig.command || 'npm';
+      const args = svc.args || appConfig.args || ['run', 'dev'];
+
+      console.log(`  [${svc.role}] ${command} ${args.join(' ')} (port ${port || 'N/A'}) in ${svcDir}`);
+
+      // CLI-only apps → open in Terminal
+      if (appConfig.autoOpenBrowser === false && services.length === 1) {
+        const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
+        const script = `tell application "${terminalApp}"\n  do script "cd '${svcDir}' && ${command} ${args.join(' ')}"\n  activate\nend tell`;
+        spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' });
+        runningEntry.services.set(svc.role, { process: null, port: null });
+        break;
+      }
+
+      const childProcess = spawn(command, args, { cwd: svcDir, env, shell: true, detached: false });
+
+      childProcess.stdout?.on('data', (d) => console.log(`[${appConfig.name}/${svc.role}] ${d.toString().trim()}`));
+      childProcess.stderr?.on('data', (d) => console.error(`[${appConfig.name}/${svc.role}] ${d.toString().trim()}`));
+      childProcess.on('error', (e) => {
+        console.error(`[${appConfig.name}/${svc.role}] Error: ${e.message}`);
+        runningEntry.services.delete(svc.role);
+        if (runningEntry.services.size === 0) runningApps.delete(id);
       });
-      return;
+      childProcess.on('exit', (code) => {
+        console.log(`[${appConfig.name}/${svc.role}] Exited (${code})`);
+        runningEntry.services.delete(svc.role);
+        if (runningEntry.services.size === 0) runningApps.delete(id);
+      });
+
+      runningEntry.services.set(svc.role, { process: childProcess, port });
+
+      // Track primary port (first service with a port, typically backend or frontend)
+      if (port && !runningEntry.primaryPort) {
+        runningEntry.primaryPort = port;
+      }
+
+      // Pause between services so earlier ones can bind their ports
+      if (i < services.length - 1) {
+        await sleep(startupDelay);
+      }
     }
 
-    // Spawn the process (for web apps only)
-    const childProcess = spawn(appConfig.command, appConfig.args, {
-      cwd: appConfig.path,
-      env,
-      shell: true,
-      detached: false
-    });
-
-    // Handle process output
-    childProcess.stdout?.on('data', (data) => {
-      console.log(`[${appConfig.name}] ${data.toString().trim()}`);
-    });
-
-    childProcess.stderr?.on('data', (data) => {
-      console.error(`[${appConfig.name}] ${data.toString().trim()}`);
-    });
-
-    childProcess.on('error', (error) => {
-      console.error(`[${appConfig.name}] Error:`, error.message);
-      runningApps.delete(id);
-    });
-
-    childProcess.on('exit', (code) => {
-      console.log(`[${appConfig.name}] Exited with code ${code}`);
-      runningApps.delete(id);
-    });
-
-    // Store process info
-    runningApps.set(id, {
-      process: childProcess,
-      port,
-      startTime: new Date().toISOString()
-    });
-
-    // Open browser if configured (for web apps)
-    if (getEnv('ENABLE_AUTO_BROWSER_OPEN', 'true') !== 'false' && appConfig.autoOpenBrowser && port) {
-      setTimeout(() => {
-        openBrowser(`http://localhost:${port}`);
-      }, 3000); // Wait 3 seconds for server to start
+    // Auto-open browser for the last service with a port (usually frontend)
+    if (getEnv('ENABLE_AUTO_BROWSER_OPEN', 'true') !== 'false' && appConfig.autoOpenBrowser !== false) {
+      const lastWithPort = [...runningEntry.services.values()].reverse().find(s => s.port);
+      if (lastWithPort) {
+        setTimeout(() => openBrowser(`http://localhost:${lastWithPort.port}`), 3000);
+      }
     }
 
     res.json({
       success: true,
       appId: id,
       name: appConfig.name,
-      port,
-      pid: childProcess.pid
+      port: runningEntry.primaryPort,
+      services: [...runningEntry.services.entries()].map(([role, s]) => ({ role, port: s.port, pid: s.process?.pid })),
     });
 
   } catch (error) {
-    console.error(`Failed to start ${appConfig.name}:`, error.message);
+    runningApps.delete(id);
+    console.error(`Failed to start ${appConfig.name}: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// API: Stop an app
+// ── API: Stop ──────────────────────────────────────────────
+
 app.post('/api/apps/:id/stop', (req, res) => {
   const { id } = req.params;
-
   const running = runningApps.get(id);
-  if (!running) {
-    return res.status(400).json({ error: 'App is not running' });
-  }
+  if (!running) return res.status(400).json({ error: 'App is not running' });
 
   const appConfig = APPS.find(a => a.id === id);
 
-  try {
-    // Kill the process
-    running.process.kill('SIGTERM');
-
-    // Wait a bit, then force kill if still running
-    setTimeout(() => {
-      if (runningApps.has(id)) {
-        running.process.kill('SIGKILL');
-        runningApps.delete(id);
-      }
-    }, 5000);
-
-    runningApps.delete(id);
-
-    console.log(`Stopped ${appConfig?.name || id}`);
-
-    res.json({
-      success: true,
-      appId: id,
-      name: appConfig?.name
-    });
-
-  } catch (error) {
-    console.error(`Failed to stop ${id}:`, error.message);
-    res.status(500).json({ error: error.message });
+  // Kill all services
+  for (const [role, svc] of running.services) {
+    if (svc.process) {
+      svc.process.kill('SIGTERM');
+      setTimeout(() => {
+        try { svc.process.kill('SIGKILL'); } catch { /* already dead */ }
+      }, 5000);
+    }
   }
+  runningApps.delete(id);
+  console.log(`Stopped ${appConfig?.name || id}`);
+
+  res.json({ success: true, appId: id, name: appConfig?.name });
 });
 
-// API: Open Terminal at path
+// ── API: Terminal ──────────────────────────────────────────
+
 app.post('/api/apps/:id/open-terminal', (req, res) => {
-  const { id } = req.params;
+  const appConfig = APPS.find(a => a.id === req.params.id);
+  if (!appConfig) return res.status(404).json({ error: 'App not found' });
 
-  const appConfig = APPS.find(a => a.id === id);
-  if (!appConfig) {
-    return res.status(404).json({ error: 'App not found' });
-  }
+  const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
+  const script = `tell application "${terminalApp}"\n  do script "cd '${appConfig.path}'"\n  activate\nend tell`;
+  spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' });
+
+  res.json({ success: true, appId: req.params.id, path: appConfig.path });
+});
+
+// ── API: Browse filesystem ──────────────────────────────────
+
+app.post('/api/browse', (req, res) => {
+  const { path: dirPath } = req.body;
+  if (!dirPath) return res.status(400).json({ error: 'path is required' });
 
   try {
-    const terminalApp = getEnv('TERMINAL_APP', 'Terminal.app');
-    const terminalScript = `
-tell application "${terminalApp}"
-  do script "cd '${appConfig.path}'"
-  activate
-end tell
-    `.trim();
+    const result = listDirectory(dirPath);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
-    spawn('osascript', ['-e', terminalScript], {
-      detached: true,
-      stdio: 'ignore'
-    });
+// ── API: Discover project structure ──────────────────────────
 
-    console.log(`Opened Terminal at ${appConfig.path}`);
+app.post('/api/discover', (req, res) => {
+  const { path: dirPath } = req.body;
+  if (!dirPath) return res.status(400).json({ error: 'path is required' });
+
+  try {
+    const result = discoverProject(dirPath);
+    // Also compute port block suggestion
+    const portBlock = allocatePortBlock(APPS);
+    result.suggestedPortBlock = portBlock;
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ── API: Import discovered project ──────────────────────────
+
+app.post('/api/import', async (req, res) => {
+  const { name, description, path: projectPath, services, framework, icon, portBlock, startupDelay } = req.body;
+
+  if (!name || !projectPath) {
+    return res.status(400).json({ error: 'name and path are required' });
+  }
+
+  // Generate stable ID from name
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  // Check for duplicates
+  if (APPS.find(a => a.id === id || a.path === projectPath)) {
+    return res.status(409).json({ error: 'Project already imported' });
+  }
+
+  const newApp = {
+    id,
+    name,
+    description: description || '',
+    path: projectPath,
+    services: services || [],
+    framework: framework || 'custom',
+    type: framework || 'custom',
+    icon: icon || null,
+    portBlock: portBlock || allocatePortBlock(APPS),
+    preferredPort: portBlock?.start || null,
+    maxPort: portBlock?.end || null,
+    startupDelay: startupDelay || 2000,
+    autoOpenBrowser: true,
+    // Legacy compat: first service command
+    command: services?.[0]?.command || 'npm',
+    args: services?.[0]?.args || ['run', 'dev'],
+  };
+
+  try {
+    // Add to runtime APPS array
+    addApp(newApp);
+
+    // Persist to apps.local.js
+    await persistAppConfig(newApp);
+
+    console.log(`Imported: ${name} (${services?.length || 0} services, ports ${portBlock?.start}-${portBlock?.end})`);
 
     res.json({
       success: true,
-      appId: id,
-      name: appConfig.name,
-      path: appConfig.path
+      app: getAppStatus(id),
     });
-
   } catch (error) {
-    console.error(`Failed to open Terminal for ${id}:`, error.message);
+    console.error(`Failed to import ${name}: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// API: Force refresh (just returns current status)
-app.post('/api/refresh', (req, res) => {
-  const apps = APPS.map(app => getAppStatus(app.id));
-  res.json({ apps });
+/**
+ * Append new app config to apps.local.js file.
+ */
+async function persistAppConfig(appConfig) {
+  const configPath = path.join(__dirname, 'apps.local.js');
+
+  if (!fs.existsSync(configPath)) {
+    // Create the file from scratch
+    const content = `/**\n * YOUR PERSONAL APP CONFIGURATIONS\n */\n\nexport const USER_APPS = [\n${formatAppEntry(appConfig)}\n];\n`;
+    fs.writeFileSync(configPath, content, 'utf8');
+    return;
+  }
+
+  // Read existing, insert before the closing ];
+  let content = fs.readFileSync(configPath, 'utf8');
+  const closingBracket = content.lastIndexOf('];');
+  if (closingBracket === -1) {
+    throw new Error('Could not parse apps.local.js — missing closing ];');
+  }
+
+  // Check if array has entries (need comma)
+  const beforeClosing = content.substring(0, closingBracket).trimEnd();
+  const needsComma = beforeClosing.endsWith('}') || beforeClosing.endsWith(',');
+
+  const entry = formatAppEntry(appConfig);
+  const separator = needsComma && !beforeClosing.endsWith(',') ? ',\n\n' : '\n\n';
+
+  content = content.substring(0, closingBracket) + separator + entry + '\n' + content.substring(closingBracket);
+  fs.writeFileSync(configPath, content, 'utf8');
+}
+
+function formatAppEntry(app) {
+  const lines = [
+    `  {`,
+    `    id: '${app.id}',`,
+    `    name: '${app.name.replace(/'/g, "\\'")}',`,
+    `    description: '${(app.description || '').replace(/'/g, "\\'")}',`,
+    `    path: '${app.path}',`,
+  ];
+
+  if (app.services && app.services.length > 0) {
+    lines.push(`    services: [`);
+    for (const svc of app.services) {
+      lines.push(`      { role: '${svc.role}', dir: '${svc.dir}', command: '${svc.command}', args: ${JSON.stringify(svc.args)}, framework: '${svc.framework}', order: ${svc.order} },`);
+    }
+    lines.push(`    ],`);
+  }
+
+  lines.push(`    command: '${app.command || 'npm'}',`);
+  lines.push(`    args: ${JSON.stringify(app.args || ['run', 'dev'])},`);
+  lines.push(`    framework: '${app.framework || 'custom'}',`);
+  lines.push(`    type: '${app.type || app.framework || 'custom'}',`);
+
+  if (app.icon) lines.push(`    icon: '${app.icon}',`);
+  if (app.portBlock) lines.push(`    portBlock: { start: ${app.portBlock.start}, end: ${app.portBlock.end} },`);
+
+  lines.push(`    preferredPort: ${app.preferredPort || 'null'},`);
+  lines.push(`    maxPort: ${app.maxPort || 'null'},`);
+  lines.push(`    startupDelay: ${app.startupDelay || 2000},`);
+  lines.push(`    autoOpenBrowser: ${app.autoOpenBrowser !== false}`);
+  lines.push(`  }`);
+
+  return lines.join('\n');
+}
+
+// ── API: Serve app icons ──────────────────────────────────
+
+app.get('/api/apps/:id/icon', (req, res) => {
+  const appConfig = APPS.find(a => a.id === req.params.id);
+  if (!appConfig?.icon) return res.status(404).json({ error: 'No icon' });
+
+  const iconPath = path.join(appConfig.path, appConfig.icon);
+  if (!fs.existsSync(iconPath)) return res.status(404).json({ error: 'Icon file not found' });
+
+  res.sendFile(iconPath);
 });
 
-// API: Kill all development ports
+// ── API: Config management ──────────────────────────────────
+
+app.post('/api/config/refresh', async (req, res) => {
+  try {
+    await refreshApps();
+    res.json({ message: 'Configuration refreshed', apps: APPS.map(a => getAppStatus(a.id)), total: APPS.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/config/validate', (req, res) => {
+  const results = APPS.map(a => ({ id: a.id, name: a.name, ...validateApp(a) }));
+  res.json({ total: results.length, valid: results.filter(r => r.valid).length, results });
+});
+
+// ── API: Misc ──────────────────────────────────────────────
+
+app.post('/api/refresh', (req, res) => {
+  res.json({ apps: APPS.map(a => getAppStatus(a.id)) });
+});
+
 app.post('/api/cleanup-ports', async (req, res) => {
   try {
-    console.log('🧹 Cleaning up all development ports...');
-
     const portRanges = [
-      { start: 3000, end: 3020 },
-      { start: 4500, end: 4510 },
-      { start: 5173, end: 5180 },
-      { start: 8000, end: 8010 }
+      { start: 3000, end: 3020 }, { start: 4500, end: 4510 },
+      { start: 5173, end: 5180 }, { start: 8000, end: 8010 },
     ];
-
     const allKilled = [];
     for (const range of portRanges) {
       const killed = await killPortRange(range.start, range.end);
       allKilled.push(...killed);
     }
-
-    console.log(`✓ Cleaned up ${allKilled.length} ports`);
-
-    res.json({
-      success: true,
-      message: 'Port cleanup complete',
-      portsKilled: allKilled,
-      count: allKilled.length
-    });
+    res.json({ success: true, portsKilled: allKilled, count: allKilled.length });
   } catch (error) {
-    console.error('Failed to cleanup ports:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    runningApps: runningApps.size,
-    totalApps: APPS.length
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), runningApps: runningApps.size, totalApps: APPS.length });
 });
 
-// Start server
+// ── Start ──────────────────────────────────────────────────
+
 app.listen(PORT, () => {
-  console.log(`🚀 Dev Launcher Backend running on http://localhost:${PORT}`);
-  console.log(`📱 Configured apps: ${APPS.length}`);
-  console.log(`🔧 API endpoints:`);
-  console.log(`  GET  /api/apps              - List all apps with status`);
-  console.log(`  GET  /api/status           - System status`);
-  console.log(`  GET  /api/setup            - Setup wizard`);
-  console.log(`  GET  /api/config/validate  - Validate configurations`);
-  console.log(`  POST /api/config/refresh   - Refresh configurations`);
-  console.log(`  POST /api/apps/:id/start    - Start an app`);
-  console.log(`  POST /api/apps/:id/stop     - Stop an app`);
-  console.log(`  POST /api/apps/:id/open-terminal - Open Terminal`);
-  console.log(`  POST /api/refresh          - Force refresh status`);
-  console.log(`  POST /api/cleanup-ports    - Kill all dev ports`);
-  console.log(`  GET  /health               - Health check`);
+  console.log(`Dev Launcher Backend on http://localhost:${PORT}`);
+  console.log(`${APPS.length} apps configured`);
 });
 
-// Cleanup on exit
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down...');
-  runningApps.forEach((running, appId) => {
-    console.log(`Stopping ${appId}...`);
-    running.process.kill('SIGTERM');
+  console.log('\nShutting down...');
+  runningApps.forEach((running) => {
+    for (const [, svc] of running.services) {
+      if (svc.process) svc.process.kill('SIGTERM');
+    }
   });
   process.exit(0);
 });
