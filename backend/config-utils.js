@@ -166,10 +166,21 @@ export function validateApp(app) {
   }
   
   const warnings = [];
+  const errors = [];
   
-  // Check if path exists
+  // Check if path exists before launch. A missing cwd makes spawn fail after the API
+  // already reported success, which leaves the UI in a false running state.
   if (!fs.existsSync(app.path)) {
-    warnings.push(`Directory does not exist: ${app.path}`);
+    errors.push(`Directory does not exist: ${app.path}`);
+  }
+  
+  if (hasServices) {
+    for (const service of app.services) {
+      const serviceDir = service.dir === '.' ? app.path : path.join(app.path, service.dir || '.');
+      if (!fs.existsSync(serviceDir)) {
+        errors.push(`Service directory does not exist for ${service.role || 'service'}: ${serviceDir}`);
+      }
+    }
   }
   
   // Check port configuration
@@ -178,11 +189,11 @@ export function validateApp(app) {
     const maxPort = parseInt(app.maxPort);
     
     if (prefPort < 1024 || prefPort > 65535) {
-      warnings.push(`Preferred port ${prefPort} is outside valid range (1024-65535)`);
+      errors.push(`Preferred port ${prefPort} is outside valid range (1024-65535)`);
     }
     
     if (maxPort < prefPort) {
-      warnings.push(`Max port ${maxPort} is less than preferred port ${prefPort}`);
+      errors.push(`Max port ${maxPort} is less than preferred port ${prefPort}`);
     }
   }
   
@@ -191,9 +202,9 @@ export function validateApp(app) {
   }
   
   return {
-    valid: missing.length === 0,
+    valid: missing.length === 0 && errors.length === 0,
     warnings,
-    errors: []
+    errors: [...missing.map(field => `Missing required field: ${field}`), ...errors]
   };
 }
 

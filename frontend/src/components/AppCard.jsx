@@ -1,6 +1,6 @@
 import {
   Play, Square, Loader2, ExternalLink, Clock, Network,
-  Box, TerminalSquare, Package
+  Box, TerminalSquare, Package, Star, Clipboard
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { openTerminal, getIconUrl } from '../api';
@@ -24,7 +24,7 @@ function truncatePath(fullPath) {
   return '.../' + parts.slice(-2).join('/');
 }
 
-export function AppCard({ app, onStart, onStop, isLoading }) {
+export function AppCard({ app, onStart, onStop, onError, onCopyPath, onToggleFavorite, isFavorite, density = 'comfortable', isLoading }) {
   const isRunning = app.isRunning;
   const TypeIcon = TYPE_ICONS[app.type] || Box;
   const typeLabel = TYPE_LABELS[app.type] || app.type || 'Custom';
@@ -32,7 +32,11 @@ export function AppCard({ app, onStart, onStop, isLoading }) {
   const uptime = formatUptime(app.startTime);
 
   const handleOpenTerminal = async () => {
-    try { await openTerminal(app.id); } catch { /* ignore */ }
+    try {
+      await openTerminal(app.id);
+    } catch (error) {
+      onError?.(error.message);
+    }
   };
 
   return (
@@ -42,7 +46,7 @@ export function AppCard({ app, onStart, onStop, isLoading }) {
         ? "border-l-4 border-l-green-500 border-t-slate-700/50 border-r-slate-700/50 border-b-slate-700/50"
         : "border-slate-700/50 hover:border-slate-600/50"
     )}>
-      <div className="p-4">
+      <div className={cn('p-4', density === 'compact' && 'p-3')}>
         {/* Top row: icon/badge + status dot */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -63,10 +67,21 @@ export function AppCard({ app, onStart, onStop, isLoading }) {
               {typeLabel}
             </span>
           </div>
-          <div className={cn(
-            "h-2.5 w-2.5 rounded-full flex-shrink-0",
-            isRunning ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]" : "bg-slate-600"
-          )} />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onToggleFavorite?.(app.id)}
+              className={cn('rounded-md p-1 transition-colors', isFavorite ? 'text-yellow-300 hover:text-yellow-200' : 'text-slate-600 hover:text-slate-300')}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={isFavorite ? `Remove ${app.name} from favorites` : `Add ${app.name} to favorites`}
+            >
+              <Star className={cn('h-3.5 w-3.5', isFavorite && 'fill-current')} />
+            </button>
+            <div className={cn(
+              "h-2.5 w-2.5 rounded-full flex-shrink-0",
+              isRunning ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]" : "bg-slate-600"
+            )} />
+          </div>
         </div>
 
         {/* Name */}
@@ -78,22 +93,34 @@ export function AppCard({ app, onStart, onStop, isLoading }) {
         </p>
 
         {/* Path */}
-        <button
-          onClick={handleOpenTerminal}
-          className="group text-[11px] text-slate-500 font-mono hover:text-blue-400 flex items-center gap-1 transition-colors mb-3 truncate max-w-full"
-          title={app.path}
-        >
-          <span className="truncate">{truncatePath(app.path)}</span>
-          <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-        </button>
+        <div className="mb-3 flex max-w-full items-center gap-1 text-[11px] font-mono text-slate-500">
+          <button
+            onClick={handleOpenTerminal}
+            className="group flex min-w-0 items-center gap-1 truncate transition-colors hover:text-blue-400"
+            title={app.path}
+          >
+            <span className="truncate">{truncatePath(app.path)}</span>
+            <ExternalLink className="h-2.5 w-2.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
+          <button
+            type="button"
+            onClick={(event) => { event.stopPropagation(); onCopyPath?.(app); }}
+            className="rounded p-0.5 text-slate-600 transition-colors hover:text-blue-400"
+            title="Copy path"
+            aria-label={`Copy ${app.name} path`}
+          >
+            <Clipboard className="h-2.5 w-2.5" />
+          </button>
+        </div>
 
         {/* Services (multi-service apps) */}
         {app.services && app.services.length > 1 && (
           <div className="mb-3 space-y-1">
-            {app.services.map((svc) => {
+            {app.services.map((svc, index) => {
               const RoleIcon = ROLE_ICONS[svc.role] || Package;
+              const serviceKey = `${svc.role || 'service'}-${svc.dir || index}-${svc.command || ''}`;
               return (
-                <div key={svc.role} className="flex items-center gap-2 text-xs">
+                <div key={serviceKey} className="flex items-center gap-2 text-xs">
                   <RoleIcon className="h-3 w-3 text-slate-500 flex-shrink-0" />
                   <span className="text-slate-400 capitalize">{svc.role}</span>
                   {svc.isRunning && svc.port && (

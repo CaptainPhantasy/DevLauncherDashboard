@@ -1,0 +1,39 @@
+{
+  "agent": "autonomous-feature-builder",
+  "batch": 1,
+  "created": "2026-04-30",
+  "application": "dev-launcher",
+  "research_basis": [
+    "2026 developer dashboards should prioritize personalization, reduced cognitive load, keyboard efficiency, command palettes, and contextual feedback.",
+    "React 19 professional apps are expected to support persisted themes, accessible notifications, robust keyboard navigation, and responsive interactions."
+  ],
+  "features": [
+    { "id": 1, "name": "System-aware dark/light theme toggle", "status": "planned" },
+    { "id": 2, "name": "Persistent theme preference", "status": "planned" },
+    { "id": 3, "name": "Command palette", "status": "planned" },
+    { "id": 4, "name": "Command palette app launcher actions", "status": "planned" },
+    { "id": 5, "name": "Global keyboard shortcuts", "status": "planned" },
+    { "id": 6, "name": "Keyboard shortcuts help dialog", "status": "planned" },
+    { "id": 7, "name": "Accessible toast notifications", "status": "planned" },
+    { "id": 8, "name": "Status bar with refresh and filter context", "status": "planned" },
+    { "id": 9, "name": "Favorites pinning", "status": "planned" },
+    { "id": 10, "name": "Favorites quick filter", "status": "planned" },
+    { "id": 11, "name": "Running apps quick filter", "status": "planned" },
+    { "id": 12, "name": "Stopped apps quick filter", "status": "planned" },
+    { "id": 13, "name": "Sort by name/type/status/custom", "status": "planned" },
+    { "id": 14, "name": "Persistent sort preference", "status": "planned" },
+    { "id": 15, "name": "Density toggle", "status": "planned" },
+    { "id": 16, "name": "Persistent density preference", "status": "planned" },
+    { "id": 17, "name": "Copy app path to clipboard", "status": "planned" },
+    { "id": 18, "name": "Action/error notification feedback for start/stop/refresh/cleanup", "status": "planned" },
+    { "id": 19, "name": "Local activity log", "status": "planned" },
+    { "id": 20, "name": "Dismissible error banner with Escape support", "status": "planned" }
+  ],
+  "remaining_candidates": [
+    "Config validation drawer",
+    "Import/export launcher layout",
+    "Custom shortcut editor",
+    "Plugin surface",
+    "Cloud backup/sync"
+  ]
+}

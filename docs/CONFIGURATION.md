@@ -17,8 +17,8 @@ export const USER_APPS = [
     
     // Optional fields
     description: 'Short description', // UI tooltip
-    preferredPort: 3000,             // Preferred port
-    maxPort: 3010,                   // Port range upper bound
+    preferredPort: 10010,            // Preferred governed port
+    maxPort: 10019,                  // Port range upper bound
     autoOpenBrowser: true,           // Auto-open browser
     type: 'nextjs'                   // App type category
   }
@@ -35,15 +35,15 @@ BACKEND_HOST=127.0.0.1
 BACKEND_PORT=4500
 
 # Application Defaults
-NEXTJS_DEFAULT_PORT=3000
-VITE_DEFAULT_PORT=5173
-PYTHON_DEFAULT_PORT=8000
-STATIC_DEFAULT_PORT=4000
+NEXTJS_DEFAULT_PORT=10010
+VITE_DEFAULT_PORT=10020
+PYTHON_DEFAULT_PORT=10030
+STATIC_DEFAULT_PORT=10040
 
 # Port Management
 MAX_PORT_ATTEMPTS=10
-PREFERRED_PORT_RANGE_START=3000
-PREFERRED_PORT_RANGE_END=3500
+PREFERRED_PORT_RANGE_START=10000
+PREFERRED_PORT_RANGE_END=10100
 
 # Browser & Terminal
 BROWSER_APP=Google Chrome
@@ -120,12 +120,12 @@ Commonly used app type identifiers:
 
 | Type | Description | Typical Port |
 |------|-------------|--------------|
-| `nextjs` | Next.js application | 3000 |
-| `vite` | Vite frontend app | 5173 |
-| `cra` | Create React App | 3000 |
-| `python` | Python web app | 8000 |
+| `nextjs` | Next.js application | 10010 |
+| `vite` | Vite frontend app | 10020 |
+| `cra` | Create React App | 10050 |
+| `python` | Python web app | 10030 |
 | `python-cli` | Python CLI tool | `null` |
-| `static` | Static HTML server | 4000 |
+| `static` | Static HTML server | 10040 |
 | `docker` | Dockerized application | varies |
 | `custom` | Custom/Other | varies |
 
@@ -139,13 +139,13 @@ Commonly used app type identifiers:
 
 ### Port Ranges
 ```javascript
-// Example: Port 3000-3010 (11 attempts)
-preferredPort: 3000,
-maxPort: 3010
+// Example: Port 10010-10019 (10 attempts)
+preferredPort: 10010,
+maxPort: 10019
 
-// Example: Fixed port (only 3000)
-preferredPort: 3000,
-maxPort: 3000
+// Example: Fixed port (only 10010)
+preferredPort: 10010,
+maxPort: 10010
 
 // Example: No web interface (CLI tool)
 preferredPort: null,
@@ -238,9 +238,9 @@ description: 'E-commerce platform with TypeScript and Stripe'
 ### Port Planning
 Choose non-conflicting port ranges:
 ```javascript
-// Next.js apps: 3000-3010
-// Python APIs: 8000-8010  
-// Static sites: 4000-4010
+// Next.js apps: 10010-10019
+// Python APIs: 10030-10039
+// Static sites: 10040-10049
 // CLI tools: null (no ports)
 ```
 
@@ -267,7 +267,7 @@ Choose non-conflicting port ranges:
 ### CLI Tool Configuration
 ```javascript
 // Web app
-{ id: 'web-api', preferredPort: 8000, autoOpenBrowser: true }
+{ id: 'web-api', preferredPort: 10030, autoOpenBrowser: true }
 
 // CLI tool
 { id: 'cli-tool', preferredPort: null, autoOpenBrowser: false }

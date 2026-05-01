@@ -39,7 +39,7 @@ Issues move forward through these states. Backward transitions are allowed if ne
 |---|---|---|---|---|---|---|
 | ISSUE-0001 | 2026-04-28 07:30 EDT | Legacy SSOT.md and SSOT-Codebase-Report.md at repo root — pre-governance artifacts | Closed | Floyd | SSOT.md, SSOT-Codebase-Report.md at project root | Replaced by SSOT/dev-launcher_SSOT.md |
 | ISSUE-0002 | 2026-04-28 07:30 EDT | .gitignore missing governance write zones (.floyd/) and some hygiene entries | Closed | Floyd | .gitignore | Added .floyd/ and missing hygiene patterns |
-| ISSUE-0003 | 2026-04-28 07:30 EDT | .env.example references forbidden ports (3000, 5173, 8000, 4000) as default targets | New | Unassigned | .env.example lines 10-13 | N/A |
+| ISSUE-0003 | 2026-04-28 07:30 EDT | .env.example and docs referenced forbidden example ports | Verified | Floyd | .env.example, README.md, docs/CONFIGURATION.md, docs/SETUP.md, docs/APP_REGISTRY.md | `grep` for forbidden governance ports across those docs returned no matches on 2026-04-30 |
 
 ---
 
@@ -81,6 +81,7 @@ Link the companion file from the ledger row's Evidence / Links column.
 - 2026-04-28 07:30 EDT — Added ISSUE-0001 (stale root SSOT files), ISSUE-0002 (gitignore gaps), ISSUE-0003 (forbidden ports in .env.example).
 - 2026-04-28 07:30 EDT — Closed ISSUE-0001: pre-governance SSOT.md replaced by proper governance scaffold.
 - 2026-04-28 07:30 EDT — Closed ISSUE-0002: .gitignore updated with governance patterns.
+- 2026-04-30 15:38 EDT — Verified ISSUE-0003: forbidden-port examples replaced with governed non-forbidden ranges; grep verification returned no matches.
 
 ---
 

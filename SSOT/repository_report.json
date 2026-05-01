@@ -1,0 +1,66 @@
+{
+  "project_name": "dev-launcher",
+  "completion_percentage": 87,
+  "tech_stack": [
+    "JavaScript",
+    "Node.js",
+    "Express",
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Playwright",
+    "ESLint"
+  ],
+  "complexity_score": 5,
+  "team_size_minimum": 10,
+  "go_to_market_timeline": "2-4 weeks",
+  "industry_vertical": "Developer Tools",
+  "business_model": "Internal Tool",
+  "technical_debt": 24,
+  "scalability_needs": "medium",
+  "target_users": "Developers managing multiple local development projects from one dashboard",
+  "key_features": [
+    "One-click app start and stop controls",
+    "Automatic port management and cleanup",
+    "Mixed app support for web apps, CLI tools, Python scripts, Docker services, and static apps",
+    "Configuration-driven app definitions with local overrides",
+    "Path expansion and click-to-open project folders",
+    "Project discovery and import flow",
+    "Config refresh and validation API endpoints",
+    "React dashboard with real-time status indicators",
+    "Kanban-style persistent card ordering with mouse and keyboard reordering",
+    "Command palette and global keyboard shortcuts",
+    "Theme, filter, sort, density, favorites, toast, and activity-log dashboard affordances",
+    "Detached single-instance launcher script for backend and frontend reuse"
+  ],
+  "risks": [
+    "Backend process state is in-memory, so running app status resets when the backend process restarts",
+    "App start/open-terminal flows may still open Terminal windows for launched child projects depending on app configuration",
+    "Governance harness verify currently spends more than the tool timeout during downstream stamp scanning, requiring targeted verification evidence until the harness scan is optimized",
+    "The governance repository itself has uncommitted/untracked governance files that need Douglas-owned PR handling under the read-only write boundary"
+  ],
+  "_evidence": {
+    "project_name": "FLOYD.md:1 names '# dev-launcher — FLOYD.md'; FLOYD.md:7 path '/Volumes/Storage/Development/dev-launcher'",
+    "completion_percentage": "Feature inventory method: README.md:11-18,153-163,165-177 claim launcher, port management, mixed apps, path handling, configuration, process management, validation/refresh; backend/server.js routes at ast_grep lines 167,181,293,317,330,344,361,491,500,511,536 implement APIs; frontend/src/App.jsx grep lines 273,286,302,312,491,711,769,857,868,891 implement dashboard controls. 13 of 15 claimed/active feature groups are implemented and verified; known gaps are documentation port drift and backend in-memory process persistence, yielding 87%.",
+    "tech_stack": "backend/package.json:2-6 identifies dev-launcher-backend, ESM Node entry; backend/package.json:21-23 lists express and cors; frontend/package.json:13-20 lists React, lucide-react, Tailwind-related deps; frontend/package.json:22-35 lists ESLint, Playwright, Vite tooling; FLOYD.md:70-75 records JavaScript, Node.js, Express, React 19 + Vite, and ports.",
+    "complexity_score": "Rubric: source files found under backend/frontend/scripts = 18 (simple/moderate boundary); dependencies = backend 2 runtime + frontend 7 runtime + 13 dev = 22 (moderate); architecture = two-service Express + Vite dashboard (moderate); state = in-memory + localStorage/filesystem (moderate); auth = none (simple); concurrency = spawned child processes and dev servers (moderate); data = flat JS config/localStorage (simple). Average approx 4.3, ceiling 5.",
+    "team_size_minimum": "repository-report-spec.md formula: completion 86-100% -> base size 10; complexity_score 5 -> no adjustment; team_size_minimum 10.",
+    "go_to_market_timeline": "repository-report-spec.md formula: completion 70-90% -> '2-4 weeks'; completion_percentage is 87.",
+    "industry_vertical": "README.md:3 says web-based application launcher for development projects; backend/package.json:13-19 keywords include development, launcher, dev-tools, nodejs, frontend, backend.",
+    "business_model": "README.md:3 frames the tool as a local launcher for 'your development projects'; FLOYD.md:69 describes a local development project dashboard; no public pricing or customer packaging evidence was found, so Internal Tool is the supported classification.",
+    "technical_debt": "grep for TODO/FIXME/HACK/XXX/UNVERIFIED returned no matches; Issues/dev-launcher_ISSUES.md:42 records ISSUE-0003 as verified after forbidden-port docs were corrected; governance checks found missing repository report before this file was created and uncommitted governance-layer drift. Score 24 reflects low code-marker debt with moderate governance process debt.",
+    "scalability_needs": "FLOYD.md:69 says local development launcher; backend/server.js maintains runningApps in memory and spawns local processes; needs are medium because it coordinates multiple local apps/processes but has no database or distributed runtime.",
+    "target_users": "README.md:3 explicitly targets development projects; README.md:69 says view and launch all your apps from the dashboard; FLOYD.md:69 says managing and running local development projects from a single dashboard.",
+    "key_features": "README.md:11-18,153-163,165-177 plus backend/server.js ast_grep route evidence and frontend/src/App.jsx grep evidence for implemented controls, kanban board, toolbar, status bar, toasts, command palette, and launcher behavior.",
+    "risks": "Issues/dev-launcher_ISSUES.md:42 records forbidden default-port documentation as verified fixed; FLOYD.md:71-72 and backend/server.js process map behavior show no database and in-process state; final governance checks showed governance repo dirty and governance-bump verify timed out during downstream scanning."
+  },
+  "_verified": true,
+  "_critic_rounds": 3,
+  "_critic_notes": [
+    "Round 1 self-critic: replaced unsupported launch-readiness optimism with an 87% feature-inventory score and explicit risks.",
+    "Round 2 code evidence audit: tied each field to read/grep/ast_grep evidence and avoided inferred dependencies not present in package manifests.",
+    "Round 3 fresh-eyes review: confirmed no field is placeholder or generic; retained governance harness timeout and dirty governance worktree as explicit risks instead of hiding them."
+  ],
+  "_last_verified": "2026-04-30T15:38:40-04:00",
+  "_verified_by": "Floyd"
+}

@@ -12,3 +12,166 @@ html.dark {
   background-color: #0a0f1a;
   color-scheme: dark;
 }
+
+html[data-theme='light'] {
+  background-color: #f8fafc;
+  color-scheme: light;
+}
+
+html[data-theme='light'] body {
+  background-color: #f8fafc;
+}
+
+html[data-theme='light'] .bg-\[\#0a0f1a\] { background-color: #f8fafc !important; }
+html[data-theme='light'] .bg-\[\#0a0f1a\]\/90 { background-color: rgba(248, 250, 252, 0.92) !important; }
+html[data-theme='light'] .bg-slate-950,
+html[data-theme='light'] .bg-slate-950\/90,
+html[data-theme='light'] .bg-slate-900,
+html[data-theme='light'] .bg-slate-900\/50,
+html[data-theme='light'] .bg-slate-900\/60,
+html[data-theme='light'] .bg-slate-900\/70,
+html[data-theme='light'] .bg-slate-900\/80,
+html[data-theme='light'] .bg-slate-900\/90 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+html[data-theme='light'] .bg-slate-800\/40,
+html[data-theme='light'] .bg-slate-800\/50,
+html[data-theme='light'] .bg-slate-800\/60,
+html[data-theme='light'] .bg-slate-800\/70 {
+  background-color: rgba(241, 245, 249, 0.92) !important;
+}
+html[data-theme='light'] .text-slate-100,
+html[data-theme='light'] .text-slate-200,
+html[data-theme='light'] .text-slate-300 { color: #0f172a !important; }
+html[data-theme='light'] .text-slate-400,
+html[data-theme='light'] .text-slate-500 { color: #475569 !important; }
+html[data-theme='light'] .border-slate-700,
+html[data-theme='light'] .border-slate-700\/50,
+html[data-theme='light'] .border-slate-700\/60,
+html[data-theme='light'] .border-slate-800,
+html[data-theme='light'] .border-slate-800\/40,
+html[data-theme='light'] .border-slate-800\/50,
+html[data-theme='light'] .border-slate-800\/60,
+html[data-theme='light'] .border-slate-800\/70 {
+  border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+
+.kanban-grid {
+  align-items: stretch;
+}
+
+.kanban-frame {
+  position: relative;
+  min-width: 0;
+  cursor: grab;
+  transform-origin: center;
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    filter 180ms ease,
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.kanban-frame:active {
+  cursor: grabbing;
+}
+
+.kanban-frame:hover {
+  transform: translateY(-2px);
+}
+
+.kanban-frame--dragging {
+  opacity: 0.42;
+  filter: saturate(0.65) blur(0.2px);
+  transform: scale(0.985);
+}
+
+.kanban-frame--drop-before {
+  transform: translateY(8px);
+}
+
+.kanban-frame--drop-before::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: -10px;
+  left: 10px;
+  right: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0), rgba(59, 130, 246, 0.95), rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0));
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.55);
+}
+
+.kanban-drag-handle {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  color: rgb(148, 163, 184);
+  background: rgba(15, 23, 42, 0.78);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.28);
+  opacity: 0;
+  transform: translateY(-3px) scale(0.96);
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.kanban-frame:hover .kanban-drag-handle,
+.kanban-frame:focus-within .kanban-drag-handle,
+.kanban-frame--dragging .kanban-drag-handle {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.kanban-drag-handle:hover,
+.kanban-drag-handle:focus-visible {
+  color: rgb(226, 232, 240);
+  border-color: rgba(96, 165, 250, 0.65);
+  background: rgba(30, 41, 59, 0.94);
+  outline: none;
+}
+
+.kanban-end-drop-target {
+  min-height: 18px;
+  border-radius: 16px;
+  border: 1px dashed transparent;
+  grid-column: 1 / -1;
+  transition:
+    min-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.kanban-end-drop-target--active {
+  min-height: 72px;
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(30, 41, 59, 0.34);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban-frame,
+  .kanban-drag-handle,
+  .kanban-end-drop-target {
+    transition: none;
+  }
+
+  .kanban-frame:hover,
+  .kanban-frame--dragging,
+  .kanban-frame--drop-before {
+    transform: none;
+  }
+}

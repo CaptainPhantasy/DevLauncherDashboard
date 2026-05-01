@@ -33,8 +33,8 @@ export const USER_APPS = [
     path: '~/projects/my-app',  // Supports ~ for home directory
     command: 'npm',
     args: ['run', 'dev'],
-    preferredPort: 3000,
-    maxPort: 3010,
+    preferredPort: 10010,
+    maxPort: 10019,
     autoOpenBrowser: true,
     type: 'nextjs'
   },
@@ -79,7 +79,7 @@ Dev Launcher supports different application types:
   id: 'next-app',
   command: 'npm',
   args: ['run', 'dev'],
-  preferredPort: 3000,
+  preferredPort: 10010,
   type: 'nextjs'
 }
 
@@ -88,7 +88,7 @@ Dev Launcher supports different application types:
   id: 'vite-app',
   command: 'npm',
   args: ['run', 'dev'],
-  preferredPort: 5173,
+  preferredPort: 10020,
   type: 'vite'
 }
 
@@ -97,7 +97,7 @@ Dev Launcher supports different application types:
   id: 'cra-app',
   command: 'npm',
   args: ['start'],
-  preferredPort: 3001,
+  preferredPort: 10050,
   type: 'cra'
 }
 
@@ -116,7 +116,7 @@ Dev Launcher supports different application types:
   id: 'docker-app',
   command: 'docker-compose',
   args: ['up'],
-  preferredPort: 5000,
+  preferredPort: 10060,
   type: 'docker'
 }
 ```
@@ -135,8 +135,8 @@ TERMINAL_APP=Terminal.app
 
 # Port allocation
 MAX_PORT_ATTEMPTS=10
-PREFERRED_PORT_RANGE_START=3000
-PREFERRED_PORT_RANGE_END=3500
+PREFERRED_PORT_RANGE_START=10000
+PREFERRED_PORT_RANGE_END=10100
 
 # Features
 ENABLE_AUTO_BROWSER_OPEN=true
@@ -175,7 +175,7 @@ cd backend && npm run validate
 
 **Port already in use**
 - Dev Launcher automatically finds available ports
-- Check what's running: `lsof -i :3000`
+- Check what's running: `lsof -i :10010`
 - Kill conflicting processes: `kill -9 <PID>`
 
 **Setup command not found**

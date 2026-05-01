@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = getEnv('BACKEND_PORT', '4500');
+const BACKEND_PORT = Number.parseInt(PORT, 10);
 
 // Store running processes: { appId: { services: Map<role, { process, port }>, startTime } }
 const runningApps = new Map();
@@ -32,6 +33,23 @@ function isPortAvailable(port) {
   });
 }
 
+function parsePort(value) {
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+  return port;
+}
+
+function getOriginPort(req) {
+  const origin = req.get('origin');
+  if (!origin) return null;
+
+  try {
+    return parsePort(new URL(origin).port);
+  } catch {
+    return null;
+  }
+}
+
 async function findAvailablePort(preferredPort, maxPort) {
   if (!preferredPort || !maxPort) return null;
   const maxAttempts = parseInt(getEnv('MAX_PORT_ATTEMPTS', '10'));
@@ -42,21 +60,51 @@ async function findAvailablePort(preferredPort, maxPort) {
   throw new Error(`No available ports in range ${preferredPort}-${rangeEnd}`);
 }
 
-function killPortProcess(port) {
+function listPortPids(port) {
   return new Promise((resolve) => {
-    exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null`, () => resolve());
+    exec(`lsof -ti:${port}`, (err, stdout) => {
+      if (err && !stdout) {
+        resolve([]);
+        return;
+      }
+
+      resolve(
+        stdout
+          .split('\n')
+          .map(line => Number.parseInt(line.trim(), 10))
+          .filter(Number.isInteger)
+      );
+    });
   });
 }
 
-async function killPortRange(startPort, endPort) {
+async function killPortProcess(port) {
+  const pids = await listPortPids(port);
+  if (pids.length === 0) return [];
+
+  const killed = [];
+  for (const pid of pids) {
+    if (pid === process.pid) continue;
+
+    try {
+      process.kill(pid, 'SIGKILL');
+      killed.push(pid);
+    } catch {
+      // Process may have exited between lsof and kill.
+    }
+  }
+
+  return killed;
+}
+
+async function killPortRange(startPort, endPort, excludedPorts = new Set()) {
   const killed = [];
   for (let port = startPort; port <= endPort; port++) {
-    const had = await new Promise(resolve => {
-      exec(`lsof -ti:${port}`, (err, stdout) => resolve(stdout?.trim() ? true : false));
-    });
-    if (had) {
-      await killPortProcess(port);
-      killed.push(port);
+    if (excludedPorts.has(port)) continue;
+
+    const killedPids = await killPortProcess(port);
+    if (killedPids.length > 0) {
+      killed.push({ port, pids: killedPids });
     }
   }
   return killed;
@@ -462,16 +510,24 @@ app.post('/api/refresh', (req, res) => {
 
 app.post('/api/cleanup-ports', async (req, res) => {
   try {
+    const originPort = getOriginPort(req);
+    const excludedPorts = new Set([BACKEND_PORT, originPort].filter(Number.isInteger));
     const portRanges = [
       { start: 3000, end: 3020 }, { start: 4500, end: 4510 },
       { start: 5173, end: 5180 }, { start: 8000, end: 8010 },
     ];
     const allKilled = [];
     for (const range of portRanges) {
-      const killed = await killPortRange(range.start, range.end);
+      const killed = await killPortRange(range.start, range.end, excludedPorts);
       allKilled.push(...killed);
     }
-    res.json({ success: true, portsKilled: allKilled, count: allKilled.length });
+    res.json({
+      success: true,
+      portsKilled: allKilled.map(entry => entry.port),
+      processesKilled: allKilled,
+      skippedPorts: [...excludedPorts],
+      count: allKilled.length,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,95 +1,104 @@
-const API_BASE = 'http://localhost:4500';
+const API_PORT = import.meta.env.VITE_API_PORT || '4500';
+const API_ORIGIN = import.meta.env.VITE_API_BASE || `${window.location.protocol}//${window.location.hostname}:${API_PORT}`;
+
+async function readError(response, fallback) {
+  const text = await response.text();
+  if (!text) return fallback;
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.error) {
+      const details = Array.isArray(parsed.details) ? `: ${parsed.details.join(', ')}` : '';
+      return `${parsed.error}${details}`;
+    }
+    if (parsed.message) return parsed.message;
+  } catch {
+    // Fall back to the response text below.
+  }
+
+  return text || fallback;
+}
+
+async function request(path, options = {}, fallback = 'Request failed') {
+  let response;
+
+  try {
+    response = await fetch(`${API_ORIGIN}${path}`, options);
+  } catch (error) {
+    throw new Error(`Backend unavailable at ${API_ORIGIN}. Start the backend server and try again. (${error.message})`);
+  }
+
+  if (!response.ok) {
+    throw new Error(await readError(response, `${fallback} (${response.status})`));
+  }
+
+  return response.json();
+}
 
 export async function getApps() {
-  const response = await fetch(`${API_BASE}/api/apps`);
-  if (!response.ok) throw new Error('Failed to fetch apps');
-  return response.json();
+  return request('/api/apps', {}, 'Failed to fetch apps');
 }
 
 export async function getStatus() {
-  const response = await fetch(`${API_BASE}/api/status`);
-  if (!response.ok) throw new Error('Failed to fetch status');
-  return response.json();
+  return request('/api/status', {}, 'Failed to fetch status');
 }
 
 export async function startApp(appId) {
-  const response = await fetch(`${API_BASE}/api/apps/${appId}/start`, { method: 'POST' });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to start app');
-  }
-  return response.json();
+  return request(`/api/apps/${appId}/start`, { method: 'POST' }, 'Failed to start app');
 }
 
 export async function stopApp(appId) {
-  const response = await fetch(`${API_BASE}/api/apps/${appId}/stop`, { method: 'POST' });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to stop app');
-  }
-  return response.json();
+  return request(`/api/apps/${appId}/stop`, { method: 'POST' }, 'Failed to stop app');
 }
 
 export async function refreshApps() {
-  const response = await fetch(`${API_BASE}/api/refresh`, { method: 'POST' });
-  if (!response.ok) throw new Error('Failed to refresh');
-  return response.json();
+  return request('/api/config/refresh', { method: 'POST' }, 'Failed to refresh app configuration');
 }
 
 export async function openTerminal(appId) {
-  const response = await fetch(`${API_BASE}/api/apps/${appId}/open-terminal`, { method: 'POST' });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to open Terminal');
-  }
-  return response.json();
+  return request(`/api/apps/${appId}/open-terminal`, { method: 'POST' }, 'Failed to open Terminal');
 }
 
 export async function browseDirectory(dirPath) {
-  const response = await fetch(`${API_BASE}/api/browse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: dirPath }),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to browse directory');
-  }
-  return response.json();
+  return request(
+    '/api/browse',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: dirPath }),
+    },
+    'Failed to browse directory'
+  );
 }
 
 export async function discoverProject(dirPath) {
-  const response = await fetch(`${API_BASE}/api/discover`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: dirPath }),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to discover project');
-  }
-  return response.json();
+  return request(
+    '/api/discover',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: dirPath }),
+    },
+    'Failed to discover project'
+  );
 }
 
 export async function importProject(projectData) {
-  const response = await fetch(`${API_BASE}/api/import`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(projectData),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to import project');
-  }
-  return response.json();
+  return request(
+    '/api/import',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(projectData),
+    },
+    'Failed to import project'
+  );
 }
 
 export async function cleanupPorts() {
-  const response = await fetch(`${API_BASE}/api/cleanup-ports`, { method: 'POST' });
-  if (!response.ok) throw new Error('Failed to cleanup ports');
-  return response.json();
+  return request('/api/cleanup-ports', { method: 'POST' }, 'Failed to cleanup ports');
 }
 
 export function getIconUrl(appId) {
-  return `${API_BASE}/api/apps/${appId}/icon`;
+  return `${API_ORIGIN}/api/apps/${appId}/icon`;
 }

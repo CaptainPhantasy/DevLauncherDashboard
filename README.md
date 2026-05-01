@@ -39,8 +39,8 @@ export const USER_APPS = [
     path: '~/projects/my-app',
     command: 'npm',
     args: ['run', 'dev'],
-    preferredPort: 3000,
-    maxPort: 3010,
+    preferredPort: 10010,
+    maxPort: 10019,
     autoOpenBrowser: true,
     type: 'nextjs'
   }
@@ -105,7 +105,7 @@ export const USER_APPS = [
     path: '~/projects/blog',
     command: 'npm',
     args: ['run', 'dev'],
-    preferredPort: 3000,
+    preferredPort: 10010,
     type: 'nextjs'
   },
 
@@ -135,11 +135,11 @@ MAX_PORT_ATTEMPTS=10                   # Port conflict handling
 ### Supported App Types
 | Type | Example Command | Typical Port |
 |------|----------------|--------------|
-| `nextjs` | `npm run dev` | 3000 |
-| `vite` | `npm run dev` | 5173 |
-| `python` | `python app.py` | 8000 |
+| `nextjs` | `npm run dev` | 10010 |
+| `vite` | `npm run dev` | 10020 |
+| `python` | `python app.py` | 10030 |
 | `python-cli` | `python script.py` | None |
-| `static` | `python -m http.server` | 4000 |
+| `static` | `python -m http.server` | 10040 |
 | `docker` | `docker-compose up` | Varies |
 
 ## 🔧 Advanced Features
@@ -211,7 +211,7 @@ npm run validate
   path: '~/projects/dashboard',
   command: 'npm',
   args: ['start'],
-  preferredPort: 3000,
+  preferredPort: 10020,
   type: 'cra'
 }
 ```
@@ -224,7 +224,7 @@ npm run validate
   path: '${DEV_ROOT}/api-server',
   command: 'uvicorn',
   args: ['main:app', '--reload'],
-  preferredPort: 8000,
+  preferredPort: 10030,
   type: 'python'
 }
 ```
