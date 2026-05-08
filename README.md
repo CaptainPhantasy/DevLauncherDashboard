@@ -1,285 +1,422 @@
-# Dev Launcher Framework
+# Dev Launcher Framework  
+## Or: The Big Red Button For Your Entire Development Life
 
-A flexible, reusable web-based application launcher for your development projects. Configure all your apps once and launch them with a single click.
+---
 
-## 📸 Dashboard Preview
+**DOCUMENT CLASSIFICATION:** README / TOOL FOR PEOPLE TIRED OF OPENING 14 TERMINALS  
+**DATE RECORDED:** Thursday. Somehow already too late.  
+**LOCATION:** A garage full of blinking lights and poor decisions  
+**BEVERAGE:** Coffee that tastes faintly of solder and regret  
+**CURRENT SYSTEM STATE:** Surprisingly operational  
 
-![Dev Launcher Dashboard](Dev-Launcher-Dash.png)
+---
 
-## ✨ Features
+## What Is This Thing?  
+(Or: Why Did We Build A Launcher Instead Of Learning Self-Control)
 
-- **One-click app launching** - Start/stop your development apps instantly
-- **Automatic port management** - Smart port detection and conflict resolution
-- **Mixed app support** - Web apps, CLI tools, Python scripts, Docker services
-- **Click-to-open paths** - Click any folder path to open Terminal there
-- **Professional UI** - Clean, modern interface with real-time status
-- **Environment flexible** - Support for ~, env variables, relative/absolute paths
-- **Configuration-driven** - Easy to customize and version control
+You know that moment where you have:
 
-## 🚀 Quick Start (3 minutes)
+- one frontend  
+- two APIs  
+- three scripts  
+- a database container  
+- a random Python thing you forgot existed  
+- sixteen browser tabs explaining why port 3000 exploded again  
 
-### 1. Install & Setup
+…and suddenly your desktop looks like the command center of a submarine operated entirely by raccoons?
+
+Yeah. This fixes that.
+
+The Dev Launcher Framework is basically a giant control panel for your development life. You tell it where your projects live once. After that, you click buttons and your entire stack wakes up like some caffeinated robot orchestra.
+
+No spreadsheets.  
+No “wait what terminal was running Redis?”  
+No archaeological expedition through shell history.
+
+Just:  
+**launch the thing.**
+
+---
+
+## What It Actually Does  
+(Or: The Useful Part Hidden Beneath The Chaos)
+
+### One-Click Launching
+Hit a button. App starts.
+
+That’s it. That’s the feature. Somehow this still feels revolutionary in modern software.
+
+---
+
+### Smart Port Management
+It automatically handles ports because apparently humanity collectively decided that “address already in use” should remain a personality test.
+
+The launcher:
+- detects conflicts
+- finds open ports
+- avoids collisions
+- cleans up zombie processes like a tiny digital exterminator
+
+No more hunting mysterious Node processes at 2:47 AM while whispering “who are you.”
+
+---
+
+### Supports Basically Everything
+If it runs on your machine, this thing will probably wrangle it.
+
+- Next.js apps
+- Vite apps
+- Python services
+- CLI tools
+- Docker containers
+- weird side projects you swore were temporary in 2022
+
+The launcher does not judge your stack choices.
+
+Bella the cat does, though.
+
+---
+
+### Click-To-Open Paths
+You click the project path.
+
+A terminal opens there instantly.
+
+Because copying paths around like it’s 2006 should have been illegal years ago.
+
+---
+
+### Real-Time Status Monitoring
+You can actually see:
+- what’s running
+- what exploded
+- what port something landed on
+- which app is currently pretending everything is fine
+
+Like mission control.  
+Except the astronauts are JavaScript processes held together by caffeine.
+
+---
+
+## What It ALSO Does  
+### Or: How We Finally Put An End To The “AI Can’t Use The Terminal” Nonsense
+
+Here’s where this thing accidentally wandered into the future.
+
+Most AI tools today can *talk* about terminal workflows.  
+They can suggest commands.  
+They can hallucinate commands with the confidence of a raccoon holding a flamethrower.
+
+But actually letting AI agents operate CLI workflows inside a browser environment?
+
+Historically speaking: absolute nonsense.
+
+So we fixed it.
+
+The Dev Launcher Framework quietly became the bridge that lets AI agents actually interact with real CLI applications through a browser-based environment.
+
+Not fake toy terminals.  
+Not “simulated shell experiences.”  
+Not sanitized sandbox nonsense wrapped in corporate optimism.
+
+Real processes.  
+Real output.  
+Real applications.  
+Real runtime visibility.
+
+Which means agents can:
+- launch services
+- monitor workflows
+- inspect outputs
+- coordinate processes
+- manage multi-app environments
+- stop things before they become tomorrow’s debugging session
+
+All from the browser.
+
+Which is where things start getting mildly dangerous in the fun way.
+
+Because once agents can actually SEE the environment they’re operating in instead of blindly roleplaying Linux tutorials…
+
+everything changes.
+
+The wall between:
+- terminal
+- browser
+- automation
+- and AI coordination
+
+starts collapsing into one giant operational workspace.
+
+And honestly?  
+It rules.
+
+---
+
+## Coming Soon From Floyd’s Labs  
+### Or: Douglas Definitely Started Another Project Again
+
+This launcher is only the beginning.
+
+We’re also building a dedicated Floyd’s Labs platform focused entirely on:
+
+> **Agentic CLI operation directly in the browser.**
+
+Not “AI chat with terminal aesthetics.”
+
+We mean:
+- real browser-native terminal orchestration
+- persistent AI workspaces
+- multi-agent coordination
+- live runtime awareness
+- terminals that actually remember things
+- operational systems that feel alive instead of disposable
+
+Because terminals deserve better than being treated like ancient forbidden wizard text from 1978.
+
+---
+
+## The Smart Terminal  
+### Or: Johnny Five Is Alive And Apparently Knows Bash
+
+Somewhere in the garage, another project is forming.
+
+A smart terminal.
+
+Not just a terminal emulator.  
+Not another blinking rectangle pretending to be innovative because it added transparency effects.
+
+We mean a terminal that:
+- understands context
+- remembers workflows
+- coordinates with AI agents
+- monitors running systems intelligently
+- adapts to how you actually work
+- occasionally feels suspiciously sentient
+
+Like if mission control, UNIX philosophy, and a caffeinated robot all merged into one thing.
+
+Honestly the current internal description is basically:
+
+> “Johnny Five, but he learned shell scripting and developed opinions.”
+
+Bella is skeptical.  
+Bowser appears deeply interested.  
+Douglas keeps muttering “this is gonna be cool” at deeply concerning hours of the night.
+
+---
+
+## Quick Start  
+(Or: Summon The Machine)
+
+### 1. Install Everything
 ```bash
-cd dev-launcher
-
-# Install dependencies
 npm install
-
-# Run setup wizard (creates your config)
 npm run setup
 ```
 
+The setup wizard walks you through configuration without making you read a 14-page enterprise PDF written by someone named “Solutions Architect Chad.”
+
+---
+
 ### 2. Add Your Apps
-Edit `backend/apps.local.js`:
+
+Edit:
+
+```bash
+backend/apps.local.js
+```
+
+Example:
+
 ```javascript
 export const USER_APPS = [
   {
     id: 'my-app',
-    name: 'My Next.js Project',
+    name: 'Cool Thing I Built Instead Of Sleeping',
     path: '~/projects/my-app',
     command: 'npm',
     args: ['run', 'dev'],
     preferredPort: 10010,
-    maxPort: 10019,
-    autoOpenBrowser: true,
     type: 'nextjs'
   }
 ];
 ```
 
-### 3. Launch & Start
-```bash
-# Simple startup (recommended)
-./start.sh
+That’s basically it.
 
-# Or use the desktop app (if created)
-# Double-click Dev-Launcher.app on your Desktop
-
-# Manual startup
-cd backend && npm start
-cd frontend && npm run dev # in another terminal
-```
-
-### 4. Use Your Launcher
-The launcher will automatically:
-- Clean up all running development ports
-- Start backend (http://localhost:4500) and frontend (http://localhost:4501)
-- **Auto-open your browser** to http://localhost:4501 after 5 seconds
-
-View and launch all your apps from the dashboard!
-
-## 📁 Project Structure
-
-```
-dev-launcher/
-├── backend/
-│   ├── server.js              # Express API server
-│   ├── apps.js                # Dynamic app configurations
-│   ├── apps.local.js          # YOUR personal apps (gitignored)
-│   ├── apps-template.js       # Configuration examples
-│   ├── apps.defaults.js       # Built-in fallbacks
-│   ├── config-utils.js        # Path resolution & utilities
-│   └── package.json
-├── frontend/
-│   └── src/                   # React UI components
-├── scripts/
-│   └── setup.js               # Interactive setup wizard
-├── docs/
-│   ├── SETUP.md               # Setup guide
-│   ├── CONFIGURATION.md      # Configuration reference
-│   └── EXAMPLES.md           # Usage examples
-├── .env.example              # Environment template
-└── .gitignore                # Properly ignores personal configs
-```
-
-## ⚙️ Configuration
-
-### Simple App Configuration
-```javascript
-// apps.local.js
-export const USER_APPS = [
-  // Next.js app
-  {
-    id: 'blog',
-    name: 'My Blog',
-    path: '~/projects/blog',
-    command: 'npm',
-    args: ['run', 'dev'],
-    preferredPort: 10010,
-    type: 'nextjs'
-  },
-
-  // Python CLI tool
-  {
-    id: 'data-scraper',
-    name: 'Web Scraper',
-    path: '${DEV_ROOT}/tools/scraper',
-    command: 'python',
-    args: ['main.py'],
-    preferredPort: null, // No web interface
-    autoOpenBrowser: false,
-    type: 'python-cli'
-  }
-];
-```
-
-### Environment Variables
-```env
-# .env (create from .env.example)
-DEV_ROOT=~/projects                    # Base directory
-BROWSER_APP=Google Chrome              # Browser preference
-TERMINAL_APP=Terminal.app             # Terminal preference
-MAX_PORT_ATTEMPTS=10                   # Port conflict handling
-```
-
-### Supported App Types
-| Type | Example Command | Typical Port |
-|------|----------------|--------------|
-| `nextjs` | `npm run dev` | 10010 |
-| `vite` | `npm run dev` | 10020 |
-| `python` | `python app.py` | 10030 |
-| `python-cli` | `python script.py` | None |
-| `static` | `python -m http.server` | 10040 |
-| `docker` | `docker-compose up` | Varies |
-
-## 🔧 Advanced Features
-
-### Path Flexibility
-- **Tilde**: `~/projects/my-app` → expands to home
-- **Environment**: `${DEV_ROOT}/my-app` → uses env vars
-- **Absolute**: `/Users/name/projects/my-app`
-- **Relative**: `../projects/my-app`
-
-### Smart Port Management
-- Auto-detects available ports
-- Handles port conflicts gracefully
-- Shows assigned ports in real-time
-- Port range configuration per app
-
-### Process Management
-- Clean process lifecycle management
-- Status monitoring with visual indicators
-- Stop running apps with one click
-- Automatic cleanup on shutdown
-
-### Click-to-Open Paths
-For any app, click its folder path to instantly open a new Terminal window at that location.
-
-### Environment Integration
-```bash
-# Setup new environment automatically
-cd backend && npm run setup
-
-# Validate your configuration
-npm run validate
-
-# Refresh configurations without restart
-# POST /api/config/refresh in browser console
-```
-
-## 📚 Documentation
-
-- **[Setup Guide](docs/SETUP.md)** - Complete setup instructions
-- **[Configuration Reference](docs/CONFIGURATION.md)** - All configuration options
-- **[Examples](docs/EXAMPLES.md)** - Common configuration patterns
-
-## 🛠️ Development
-
-### API Endpoints
-- `GET /api/apps` - List all apps with status
-- `GET /api/status` - System status overview
-- `POST /api/apps/:id/start` - Start an application
-- `POST /api/apps/:id/stop` - Stop an application
-- `POST /api/apps/:id/open-terminal` - Open Terminal at path
-- `POST /api/config/refresh` - Reload configurations
-- `GET /api/config/validate` - Validate app configs
-- `GET /api/setup` - Run setup wizard
-
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
-
-## 🎯 Use Cases
-
-### Web Development
-```javascript
-{
-  id: 'frontend',
-  name: 'React Dashboard',
-  path: '~/projects/dashboard',
-  command: 'npm',
-  args: ['start'],
-  preferredPort: 10020,
-  type: 'cra'
-}
-```
-
-### Backend Services
-```javascript
-{
-  id: 'api',
-  name: 'Python API',
-  path: '${DEV_ROOT}/api-server',
-  command: 'uvicorn',
-  args: ['main:app', '--reload'],
-  preferredPort: 10030,
-  type: 'python'
-}
-```
-
-### Development Tools
-```javascript
-{
-  id: 'tailwind-watch',
-  name: 'Tailwind CSS Compiler',
-  path: '~/projects/design-system',
-  command: 'npm',
-  args: ['run', 'css:watch'],
-  preferredPort: null,
-  autoOpenBrowser: false,
-  type: 'cli'
-}
-```
-
-### Docker Services
-```javascript
-{
-  id: 'database',
-  name: 'PostgreSQL with Docker',
-  path: '~/projects/docker-setup',
-  command: 'docker-compose',
-  args: ['up', '-d', 'postgres'],
-  preferredPort: 5432,
-  type: 'docker'
-}
-```
-
-## 🔄 Migration
-
-Upgrade from older versions:
-```bash
-# Your apps are preserved in apps.local.js
-# Update paths to use ~ or environment variables
-# Add project types for better organization
-# Check: docs/CONFIGURATION.md for migration tips
-```
-
-## 🤝 Support
-
-- **Issues**: Report bugs in GitHub Issues
-- **Feature Requests**: Discuss in Discussions
-- **Questions**: Check docs/CONFIGURATION.md first
-
-## 📄 License
-
-MIT License - Feel free to use in personal and commercial projects!
+No YAML labyrinth.  
+No “service mesh orchestration strategy.”  
+No ceremonial Kubernetes rituals under a full moon.
 
 ---
 
-**Ready to organize your development workflow?** 
+### 3. Launch The Whole Circus
 
-`git clone <this-repo>` → `npm install` → `npm run setup` → `./start.sh` → ✨
+```bash
+./start.sh
+```
 
-Your personalized development launcher is ready! 🚀
+Then the launcher:
+- starts backend services
+- starts frontend services
+- cleans old ports
+- opens your browser automatically
+- pretends your workflow is organized
+
+Honestly? Kinda magical.
+
+---
+
+## Why This Exists  
+(Or: Douglas Got Annoyed Again)
+
+This project was born from the ancient developer ritual of:
+
+1. Open terminal  
+2. cd somewhere  
+3. npm run dev  
+4. Repeat 11 times  
+5. Forget which terminal matters  
+6. Accidentally kill the database  
+7. Experience ego death  
+
+So naturally the response was:
+> “I could build something better.”
+
+Which, historically speaking, is how most garage software disasters begin.
+
+Now there’s a dashboard.  
+Now there’s process management.  
+Now there’s a launcher that behaves like your operating system actually respects your time.
+
+Dangerous evolution.
+
+---
+
+## Configuration  
+(Or: Tell The Machine Where Your Weird Stuff Lives)
+
+Supports:
+- `~/paths`
+- environment variables
+- relative paths
+- absolute paths
+- probably the abandoned project buried in `/Desktop/final-final-REAL/`
+
+Example:
+
+```env
+DEV_ROOT=~/projects
+BROWSER_APP=Google Chrome
+TERMINAL_APP=Terminal.app
+```
+
+Simple. Human. Slightly rebellious.
+
+---
+
+## Supported App Types  
+(Or: The Creature Collection)
+
+| Type | What It Means |
+|---|---|
+| `nextjs` | React wizardry |
+| `vite` | Fast little gremlin apps |
+| `python` | Data science or chaos |
+| `python-cli` | Scripts that scare normal people |
+| `docker` | Tiny infrastructure boxes |
+| `static` | The classics |
+| `cli` | Terminal goblin energy |
+
+---
+
+## Features We’re Weirdly Proud Of
+
+### Automatic Cleanup
+The launcher kills stale processes automatically.
+
+Because some apps refuse to die with dignity.
+
+---
+
+### Configuration Reloading
+Change config. Refresh. Done.
+
+No restart rituals.  
+No chanting.  
+No enterprise middleware summoning circle.
+
+---
+
+### Mixed Project Support
+Frontend. Backend. Scripts. Containers.
+
+One dashboard.
+
+Like a universal remote for your development problems.
+
+---
+
+## The Philosophy  
+(Or: Software Should Feel Alive)
+
+Most developer tooling now feels like it was designed inside a glass conference room by people who say things like:
+> “Let’s revisit stakeholder alignment.”
+
+This is not that.
+
+This is garage software.
+
+Fast. Useful. Opinionated. Slightly chaotic. Built by people who actually use the thing every day and get angry when it wastes ten seconds.
+
+The launcher exists because repetitive setup work is boring and life is short.
+
+Also because opening twelve terminals every morning slowly turns your soul into drywall dust.
+
+---
+
+## Contributing  
+(Or: Join The Problem)
+
+You can:
+- fork it
+- improve it
+- break it
+- make it stranger
+- add support for your cursed setup
+
+Just don’t turn it into enterprise software.
+
+If someone suggests adding a quarterly roadmap presentation, Bowser will unplug the router again.
+
+---
+
+## Final Notes From The Garage
+
+This thing is not trying to become a “platform.”
+
+It’s trying to make development feel less annoying.
+
+That’s the mission.
+
+A button that launches your entire workflow should not feel like advanced science. It should feel obvious. Like electricity. Or duct tape.
+
+Anyway.
+
+The apps launch.  
+The ports work.  
+The dashboard lives.  
+The AI agents are coordinating again.  
+The coffee is terrible.  
+The cats are supervising.
+
+Ship something.
+
+---
+
+**DOCUMENT ENDS**
+
+*— Floyd’s Labs*  
+*Department of Questionable Productivity Engineering*  
+*“If your workflow requires twelve terminals, the workflow is the bug.”*
